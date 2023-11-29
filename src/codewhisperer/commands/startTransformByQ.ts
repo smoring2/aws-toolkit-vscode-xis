@@ -92,227 +92,254 @@ async function pickProject(
 }
 
 export async function startTransformByQ() {
-    await telemetry.amazonq_codeTransformInvoke.run(async span => {
-        span.record({ codeTransform_SessionId: codeTransformTelemetryState.getSessionId() })
+    //await telemetry.amazonq_codeTransformInvoke.run(async span => {
+    //span.record({ codeTransform_SessionId: codeTransformTelemetryState.getSessionId() })
 
-        let openProjects: vscode.QuickPickItem[] = []
+    let openProjects: vscode.QuickPickItem[] = []
+    try {
+        openProjects = await getOpenProjects()
+    } catch (err) {
+        getLogger().error('Failed to get open projects: ', err)
+        throw err
+    }
+    const state = await collectInputs(openProjects)
+
+    try {
+        await validateProjectSelection(state.project)
+    } catch (err) {
+        getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
+        throw err
+    }
+
+    //span.record({ codeTransform_SourceJavaVersion: transformByQState.getSourceJDKVersion() })
+
+    const selection = await vscode.window.showWarningMessage(
+        CodeWhispererConstants.dependencyDisclaimer,
+        { modal: true },
+        'Transform',
+    )
+
+    if (selection !== 'Transform') {
+        throw new ToolkitError('Transform cancelled', {
+            code: 'DidNotConfirmDisclaimer',
+            cancelled: true,
+        })
+    }
+    telemetry.amazonq_codeTransform_jobStartedCompleteFromPopupDialog.emit(
+        {
+            codeTransformJavaSourceVersionsAllowed: true,
+            codeTransformJavaTargetVersionsAllowed: true,
+            codeTransformConfigurationFilePath: state.project.description!,
+            codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+        },
+    )
+    transformByQState.setToRunning()
+    transformByQState.setProjectPath(state.project.description!)
+    sessionPlanProgress['uploadCode'] = StepProgress.Pending
+    sessionPlanProgress['buildCode'] = StepProgress.Pending
+    sessionPlanProgress['transformCode'] = StepProgress.Pending
+    sessionPlanProgress['returnCode'] = StepProgress.Pending
+    const startTime = new Date()
+
+    vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
+    vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+    vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
+    resetReviewInProgress()
+
+    await vscode.commands.executeCommand('aws.amazonq.refresh')
+
+    let intervalId = undefined
+    let errorMessage = ''
+    try {
+        intervalId = setInterval(() => {
+            vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+        }, CodeWhispererConstants.progressIntervalMs)
+        // step 1: CreateCodeUploadUrl and upload code
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
+
+        let uploadId = ''
+        let payloadFileName = ''
+        throwIfCancelled()
         try {
-            openProjects = await getOpenProjects()
-        } catch (err) {
-            getLogger().error('Failed to get open projects: ', err)
-            throw err
+            // TODO: we want to track zip failures separately from uploadPayload failures
+            const startTime = Date.now()
+            payloadFileName = await zipCode(state.project.description!)
+            telemetry.amazonq_codeTransform_jobCreateZipEndTime.emit({
+                codeTransformUploadZipSize: fs.statSync(payloadFileName).size,
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransformRunTimeLatency: (Date.now() - startTime),
+            })
+        } catch (error) {
+            errorMessage = 'Failed to zip code'
+            telemetry.amazonq_codeTransform_logGeneralError({
+                codeTransformApiErrorMessage: errorMessage,
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            })
+            throw new ToolkitError(errorMessage) // do not chain the error due to security issues (may contain the uploadUrl)
         }
-        const state = await collectInputs(openProjects)
 
         try {
-            await validateProjectSelection(state.project)
-        } catch (err) {
-            getLogger().error('Selected project is not Java 8, not Java 11, or does not use Maven', err)
-            throw err
+            await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
+            uploadId = await uploadPayload(payloadFileName)
+        } catch (error) {
+            errorMessage = 'Failed to upload zipFile to S3'
+            telemetry.amazonq_codeTransform_logGeneralError({
+                codeTransformApiErrorMessage: errorMessage,
+                codeTransformSessionId: codeTransformTelemetryState.getSessionId(),
+            })
+            throw new ToolkitError(errorMessage)
         }
-
-        span.record({ codeTransform_SourceJavaVersion: transformByQState.getSourceJDKVersion() })
-
-        const selection = await vscode.window.showWarningMessage(
-            CodeWhispererConstants.dependencyDisclaimer,
-            { modal: true },
-            'Transform'
-        )
-
-        if (selection !== 'Transform') {
-            throw new ToolkitError('Transform cancelled', { code: 'DidNotConfirmDisclaimer', cancelled: true })
-        }
-
-        transformByQState.setToRunning()
-        transformByQState.setProjectPath(state.project.description!)
-        sessionPlanProgress['uploadCode'] = StepProgress.Pending
-        sessionPlanProgress['buildCode'] = StepProgress.Pending
-        sessionPlanProgress['transformCode'] = StepProgress.Pending
-        sessionPlanProgress['returnCode'] = StepProgress.Pending
-        const startTime = new Date()
-
-        vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-        vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
-        vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
-        vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
-        resetReviewInProgress()
-
+        sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
         await vscode.commands.executeCommand('aws.amazonq.refresh')
 
-        let intervalId = undefined
-        let errorMessage = ''
+        await sleep(2000) // sleep before starting job to prevent ThrottlingException
+        throwIfCancelled()
+
+        // step 2: StartJob and store the returned jobId in TransformByQState
+        let jobId = ''
         try {
-            intervalId = setInterval(() => {
-                vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
-            }, CodeWhispererConstants.progressIntervalMs)
-            // step 1: CreateCodeUploadUrl and upload code
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
-            await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
-
-            let uploadId = ''
-            throwIfCancelled()
-            try {
-                // TODO: we want to track zip failures separately from uploadPayload failures
-                const payloadFileName = await zipCode(state.project.description!)
-                await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
-                uploadId = await uploadPayload(payloadFileName)
-            } catch (error) {
-                errorMessage = 'Failed to zip code and upload it to S3'
-                span.record({
-                    codeTransform_ApiName: 'CreateUploadUrl',
-                })
-                throw new ToolkitError(errorMessage) // do not chain the error due to security issues (may contain the uploadUrl)
-            }
-            sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
-
-            await sleep(2000) // sleep before starting job to prevent ThrottlingException
-            throwIfCancelled()
-
-            // step 2: StartJob and store the returned jobId in TransformByQState
-            let jobId = ''
-            try {
-                jobId = await startJob(uploadId)
-            } catch (error) {
-                errorMessage = 'Failed to start job'
-                span.record({
-                    codeTransform_ApiName: 'StartTransformation',
-                })
-                getLogger().error(errorMessage, error)
-                throw new ToolkitError(errorMessage, { cause: error as Error })
-            }
-            transformByQState.setJobId(jobId)
-            span.record({ codeTransform_JobId: jobId })
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
-
-            await sleep(2000) // sleep before polling job to prevent ThrottlingException
-            throwIfCancelled()
-
-            // intermediate step: show transformation-plan.md file
-            // TO-DO: on IDE restart, resume here if a job was ongoing
-            try {
-                await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
-            } catch (error) {
-                errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
-                span.record({
-                    codeTransform_ApiName: 'GetTransformation',
-                })
-                getLogger().error(errorMessage, error)
-                throw new ToolkitError(errorMessage, { cause: error as Error })
-            }
-            let plan = undefined
-            try {
-                plan = await getTransformationPlan(jobId)
-            } catch (error) {
-                errorMessage = 'Failed to get transformation plan'
-                span.record({
-                    codeTransform_ApiName: 'GetTransformationPlan',
-                })
-                getLogger().error(errorMessage, error)
-                throw new ToolkitError(errorMessage, { cause: error as Error })
-            }
-            sessionPlanProgress['buildCode'] = StepProgress.Succeeded
-            const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
-            fs.writeFileSync(planFilePath, plan)
-            vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
-            transformByQState.setPlanFilePath(planFilePath)
-            vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
-
-            // step 3: poll until artifacts are ready to download
-            throwIfCancelled()
-            let status = ''
-            try {
-                status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
-            } catch (error) {
-                errorMessage = 'Failed to get transformation job status'
-                span.record({
-                    codeTransform_ApiName: 'GetTransformation',
-                })
-                getLogger().error(errorMessage, error)
-                throw new ToolkitError(errorMessage, { cause: error as Error })
-            }
-
-            span.record({
-                codeTransform_ResultStatusMessage: status,
-            })
-
-            if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
-                errorMessage = 'Failed to complete transformation'
-                getLogger().error(errorMessage)
-                sessionPlanProgress['transformCode'] = StepProgress.Failed
-
-                throw new ToolkitError(errorMessage, { code: 'JobDidNotSucceed' })
-            }
-
-            sessionPlanProgress['transformCode'] = StepProgress.Succeeded
-            transformByQState.setToSucceeded()
-            if (status === 'PARTIALLY_COMPLETED') {
-                transformByQState.setToPartiallySucceeded()
-            }
-
-            await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
-            sessionPlanProgress['returnCode'] = StepProgress.Succeeded
+            jobId = await startJob(uploadId)
         } catch (error) {
-            if (transformByQState.isCancelled()) {
-                stopJob(transformByQState.getJobId())
-                vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage, { modal: true })
-            } else {
-                transformByQState.setToFailed()
-                let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
-                if (errorMessage !== '') {
-                    displayedErrorMessage = errorMessage
-                }
-                if (transformByQState.getJobFailureReason() !== '') {
-                    displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
-                }
-                vscode.window.showErrorMessage(displayedErrorMessage, { modal: true })
-            }
-            if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
-                sessionPlanProgress['uploadCode'] = StepProgress.Failed
-            }
-            if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
-                sessionPlanProgress['buildCode'] = StepProgress.Failed
-            }
-            if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
-                sessionPlanProgress['transformCode'] = StepProgress.Failed
-            }
-            if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
-                sessionPlanProgress['returnCode'] = StepProgress.Failed
-            }
-        } finally {
-            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-            const durationInMs = new Date().getTime() - startTime.getTime()
+            errorMessage = 'Failed to start job'
+            // span.record({
+            //     codeTransform_ApiName: 'StartTransformation',
+            // })
+            getLogger().error(errorMessage, error)
+            throw new ToolkitError(errorMessage, { cause: error as Error })
+        }
+        transformByQState.setJobId(jobId)
+        //span.record({ codeTransform_JobId: jobId })
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
 
-            if (state.project) {
-                sessionJobHistory = processHistory(
-                    sessionJobHistory,
-                    convertDateToTimestamp(startTime),
-                    transformByQState.getProjectName(),
-                    transformByQState.getStatus(),
-                    convertToTimeString(durationInMs),
-                    transformByQState.getJobId()
-                )
+        await sleep(2000) // sleep before polling job to prevent ThrottlingException
+        throwIfCancelled()
+
+        // intermediate step: show transformation-plan.md file
+        // TO-DO: on IDE restart, resume here if a job was ongoing
+        try {
+            await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
+        } catch (error) {
+            errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
+            // span.record({
+            //     codeTransform_ApiName: 'GetTransformation',
+            // })
+            getLogger().error(errorMessage, error)
+            throw new ToolkitError(errorMessage, { cause: error as Error })
+        }
+        let plan = undefined
+        try {
+            plan = await getTransformationPlan(jobId)
+        } catch (error) {
+            errorMessage = 'Failed to get transformation plan'
+            // span.record({
+            //     codeTransform_ApiName: 'GetTransformationPlan',
+            // })
+            getLogger().error(errorMessage, error)
+            throw new ToolkitError(errorMessage, { cause: error as Error })
+        }
+        sessionPlanProgress['buildCode'] = StepProgress.Succeeded
+        const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
+        fs.writeFileSync(planFilePath, plan)
+        vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
+        vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
+
+        // step 3: poll until artifacts are ready to download
+        throwIfCancelled()
+        let status = ''
+        try {
+            status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
+        } catch (error) {
+            errorMessage = 'Failed to get transformation job status'
+            // span.record({
+            //     codeTransform_ApiName: 'GetTransformation',
+            // })
+            getLogger().error(errorMessage, error)
+            throw new ToolkitError(errorMessage, { cause: error as Error })
+        }
+
+        // span.record({
+        //     codeTransform_ResultStatusMessage: status,
+        // })
+
+        if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
+            errorMessage = 'Failed to complete transformation'
+            getLogger().error(errorMessage)
+            sessionPlanProgress['transformCode'] = StepProgress.Failed
+
+            throw new ToolkitError(errorMessage, { code: 'JobDidNotSucceed' })
+        }
+
+        sessionPlanProgress['transformCode'] = StepProgress.Succeeded
+        transformByQState.setToSucceeded()
+        if (status === 'PARTIALLY_COMPLETED') {
+            transformByQState.setToPartiallySucceeded()
+        }
+
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
+        sessionPlanProgress['returnCode'] = StepProgress.Succeeded
+    } catch (error) {
+        if (transformByQState.isCancelled()) {
+            stopJob(transformByQState.getJobId())
+            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage, { modal: true })
+        } else {
+            transformByQState.setToFailed()
+            let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
+            if (errorMessage !== '') {
+                displayedErrorMessage = errorMessage
             }
-            if (transformByQState.isSucceeded()) {
-                vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted)
+            if (transformByQState.getJobFailureReason() !== '') {
+                displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
             }
-            await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
-            clearInterval(intervalId)
-            transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
-            vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
-            await vscode.commands.executeCommand('aws.amazonq.refresh')
-            vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+            vscode.window.showErrorMessage(displayedErrorMessage, { modal: true })
+        }
+        if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
+            sessionPlanProgress['uploadCode'] = StepProgress.Failed
+        }
+        if (sessionPlanProgress['buildCode'] !== StepProgress.Succeeded) {
+            sessionPlanProgress['buildCode'] = StepProgress.Failed
+        }
+        if (sessionPlanProgress['transformCode'] !== StepProgress.Succeeded) {
+            sessionPlanProgress['transformCode'] = StepProgress.Failed
+        }
+        if (sessionPlanProgress['returnCode'] !== StepProgress.Succeeded) {
+            sessionPlanProgress['returnCode'] = StepProgress.Failed
+        }
+    } finally {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+        const durationInMs = new Date().getTime() - startTime.getTime()
+
+        if (state.project) {
+            sessionJobHistory = processHistory(
+                sessionJobHistory,
+                convertDateToTimestamp(startTime),
+                transformByQState.getProjectName(),
+                transformByQState.getStatus(),
+                convertToTimeString(durationInMs),
+                transformByQState.getJobId(),
+            )
+        }
+        if (transformByQState.isSucceeded()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted)
         }
         await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
         clearInterval(intervalId)
         transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
-        transformByQState.setPolledJobStatus('') // reset polled job status too
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
-    })
+    }
+    await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
+    clearInterval(intervalId)
+    transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
+    transformByQState.setPolledJobStatus('') // reset polled job status too
+    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
+    await vscode.commands.executeCommand('aws.amazonq.refresh')
+    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
 }
 
 export function processHistory(

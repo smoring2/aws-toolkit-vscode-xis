@@ -257,16 +257,16 @@ export class ProposedTransformationExplorer {
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
-            telemetry.amazonq_codeTransformReview.run(async span => {
+            //telemetry.amazonq_codeTransformReview.run(async span => {
                 vscode.commands.executeCommand(
                     'setContext',
                     'gumby.reviewState',
                     TransformByQReviewStatus.PreparingReview
                 )
-                span.record({
-                    codeTransform_JobId: transformByQState.getJobId(),
-                    codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
-                })
+                // span.record({
+                //     codeTransform_JobId: transformByQState.getJobId(),
+                //     codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                // })
                 telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
                 const pathToArchive = path.join(
                     ProposedTransformationExplorer.TmpDir,
@@ -291,14 +291,17 @@ export class ProposedTransformationExplorer {
                         TransformByQReviewStatus.NotStarted
                     )
                     const errorMessage = 'There was a problem fetching the transformed code.'
-                    span.record({
-                        codeTransform_ApiName: 'ExportResultArchive',
-                    })
+                    // span.record({
+                    //     codeTransform_ApiName: 'ExportResultArchive',
+                    // })
                     throw new ToolkitError(errorMessage)
                 }
+
                 const pathContainingArchive = path.dirname(pathToArchive)
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
+
+
 
                 diffModel.parseDiff(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
@@ -318,7 +321,8 @@ export class ProposedTransformationExplorer {
                     { modal: true }
                 )
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
-            })
+            //}
+            )
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {

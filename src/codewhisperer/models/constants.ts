@@ -6,7 +6,8 @@
 /**
  * SDK Client
  */
-export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+// export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+export const endpoint = "https://rts-732200995377.test.codewhisperer.ai.aws.dev/" // GAMMA IAD
 
 export const region = 'us-east-1'
 

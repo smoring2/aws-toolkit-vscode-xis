@@ -107,7 +107,12 @@ describe('Notifications Rendering', function () {
 
         await waitUntil(async () => excuteCommandStub.called, { interval: 5, timeout: 5000 })
 
-        assert.ok(excuteCommandStub.calledWith('workbench.extensions.installExtension', 'aws.toolkit.fake.extension'))
+        assert.ok(
+            excuteCommandStub.calledWith(
+                'workbench.extensions.installExtension',
+                'amazonwebservices.aws-toolkit-vscode'
+            )
+        )
         assert.ok(excuteCommandStub.calledWith('workbench.action.reloadWindow'))
         assert.ok(telemetrySpy.calledOnce)
     })
@@ -138,7 +143,7 @@ function getToastURLTestNotification(): ToolkitNotification {
     return {
         id: 'test notification 1',
         displayIf: {
-            extensionId: 'aws.toolkit.fake.extension',
+            extensionId: 'amazonwebservices.aws-toolkit-vscode',
         },
         uiRenderInstructions: {
             content: {
@@ -161,7 +166,7 @@ function getTxtNotification(): ToolkitNotification {
     return {
         id: 'test notification 2',
         displayIf: {
-            extensionId: 'aws.toolkit.fake.extension',
+            extensionId: 'amazonwebservices.aws-toolkit-vscode',
         },
         uiRenderInstructions: {
             content: {
@@ -182,7 +187,7 @@ function getModalNotification(): ToolkitNotification {
     return {
         id: 'test notification 3',
         displayIf: {
-            extensionId: 'aws.toolkit.fake.extension',
+            extensionId: 'amazonwebservices.aws-toolkit-vscode',
         },
         uiRenderInstructions: {
             content: {

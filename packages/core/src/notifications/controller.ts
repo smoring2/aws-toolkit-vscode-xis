@@ -29,6 +29,7 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { isAmazonQ } from '../shared/extensionUtilities'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { randomUUID } from '../shared/crypto'
+import { filterTrustedNotifications } from './validation'
 
 const logger = getLogger('notifications')
 
@@ -147,7 +148,11 @@ export class NotificationsController {
         }
         // Parse the notifications
         const newPayload: Notifications = JSON.parse(response.content)
-        const newNotifications = newPayload.notifications ?? []
+
+        // Security: filter out notifications with untrusted URLs or extension IDs
+        newPayload.notifications = filterTrustedNotifications(newPayload.notifications ?? [])
+
+        const newNotifications = newPayload.notifications
 
         // Get the current notifications
         const currentNotifications = this.state[category].payload?.notifications ?? []

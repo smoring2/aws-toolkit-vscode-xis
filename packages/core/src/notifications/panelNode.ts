@@ -18,6 +18,7 @@ import { readonlyDocument } from '../shared/utilities/textDocumentUtilities'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { globals } from '../shared'
+import { isTrustedExtensionId, isTrustedUrl } from './validation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('notifications')
@@ -171,6 +172,9 @@ export class NotificationsNode implements TreeNode {
                 if (!notification.uiRenderInstructions.onClick.url) {
                     throw new ToolkitError('No url provided for onclick open url')
                 }
+                if (!isTrustedUrl(notification.uiRenderInstructions.onClick.url)) {
+                    throw new ToolkitError('Notification URL rejected: untrusted domain')
+                }
                 logger.verbose(`opening url for notification: ${notification.id} ...`)
                 await openUrl(
                     vscode.Uri.parse(notification.uiRenderInstructions.onClick.url),
@@ -247,6 +251,11 @@ export class NotificationsNode implements TreeNode {
                                     )
                                     break
                                 case 'updateAndReload':
+                                    if (!isTrustedExtensionId(notification.displayIf.extensionId)) {
+                                        throw new ToolkitError(
+                                            'Extension install rejected: untrusted extension ID'
+                                        )
+                                    }
                                     // Give things time to finish executing.
                                     globals.clock.setTimeout(() => {
                                         return this.updateAndReload(notification.displayIf.extensionId)
@@ -254,6 +263,11 @@ export class NotificationsNode implements TreeNode {
                                     break
                                 case 'openUrl':
                                     if (selectedButton.url) {
+                                        if (!isTrustedUrl(selectedButton.url)) {
+                                            throw new ToolkitError(
+                                                'Notification URL rejected: untrusted domain'
+                                            )
+                                        }
                                         await openUrl(vscode.Uri.parse(selectedButton.url))
                                     } else {
                                         throw new ToolkitError('url not provided')

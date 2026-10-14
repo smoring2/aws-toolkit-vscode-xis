@@ -4,7 +4,7 @@
  */
 
 import { CognitoIdentityClient, GetIdCommand } from '@aws-sdk/client-cognito-identity'
-import { fromCognitoIdentity } from '@aws-sdk/credential-providers'
+import { fromCognitoIdentity } from '@aws-sdk/credential-provider-cognito-identity'
 import { AwsCredentialIdentityProvider } from '@aws-sdk/types'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'

@@ -54,6 +54,9 @@ module.exports = (env, argv) => {
         resolve: {
             extensions: ['.ts', '.js'],
             fallback: {
+                buffer: require.resolve('buffer/'),
+                events: require.resolve('events/'),
+                url: require.resolve('url/'),
                 stream: require.resolve('stream-browserify'),
                 os: require.resolve('os-browserify/browser'),
                 path: require.resolve('path-browserify'),

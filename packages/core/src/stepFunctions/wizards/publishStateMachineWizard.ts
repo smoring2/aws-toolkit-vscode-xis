@@ -114,8 +114,8 @@ async function* listStateMachines(region: string) {
     for await (const machine of client.listStateMachines()) {
         yield [
             {
-                label: machine.name,
-                data: machine.stateMachineArn,
+                label: machine.name ?? '',
+                data: machine.stateMachineArn ?? '',
                 description: machine.stateMachineArn,
             },
         ]
@@ -162,7 +162,7 @@ export class PublishStateMachineWizard extends Wizard<PublishStateMachineWizardS
         form.publishAction.bindPrompter(({ region }) => createPublishActionPrompter(region!))
 
         form.createResponse.roleArn.bindPrompter(
-            ({ region }) => createStepFunctionsRolePrompter(region!).transform((r) => r.Arn),
+            ({ region }) => createStepFunctionsRolePrompter(region!).transform((r) => r.Arn!),
             {
                 showWhen: (form) => form.publishAction === PublishStateMachineAction.QuickCreate,
             }

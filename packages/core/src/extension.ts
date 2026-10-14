@@ -29,7 +29,7 @@ import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
-import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { AWSClientBuilderV3, DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
@@ -116,6 +116,7 @@ export async function activateCommon(
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.sdkClientBuilderV3 = new AWSClientBuilderV3(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     // order matters here

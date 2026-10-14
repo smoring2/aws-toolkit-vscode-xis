@@ -3,7 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
+import {
+    AppRunnerClient as Client,
+    CreateConnectionCommand,
+    CreateConnectionRequest,
+    CreateConnectionResponse,
+    CreateServiceCommand,
+    CreateServiceRequest,
+    CreateServiceResponse,
+    DeleteServiceCommand,
+    DeleteServiceRequest,
+    DeleteServiceResponse,
+    DescribeServiceCommand,
+    DescribeServiceRequest,
+    DescribeServiceResponse,
+    ListConnectionsCommand,
+    ListConnectionsRequest,
+    ListConnectionsResponse,
+    ListOperationsCommand,
+    ListOperationsRequest,
+    ListOperationsResponse,
+    ListServicesCommand,
+    ListServicesRequest,
+    ListServicesResponse,
+    PauseServiceCommand,
+    PauseServiceRequest,
+    PauseServiceResponse,
+    ResumeServiceCommand,
+    ResumeServiceRequest,
+    ResumeServiceResponse,
+    StartDeploymentCommand,
+    StartDeploymentRequest,
+    StartDeploymentResponse,
+    UpdateServiceCommand,
+    UpdateServiceRequest,
+    UpdateServiceResponse,
+} from '@aws-sdk/client-apprunner'
 import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -13,59 +48,59 @@ export type AppRunnerClient = ClassToInterfaceType<DefaultAppRunnerClient>
 export class DefaultAppRunnerClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
-        return (await this.createSdkClient()).createService(request).promise()
+    public async createService(request: CreateServiceRequest): Promise<CreateServiceResponse> {
+        return (await this.createSdkClient()).send(new CreateServiceCommand(request))
     }
 
-    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
-        return (await this.createSdkClient()).listServices(request).promise()
+    public async listServices(request: ListServicesRequest): Promise<ListServicesResponse> {
+        return (await this.createSdkClient()).send(new ListServicesCommand(request))
     }
 
-    public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
-        return (await this.createSdkClient()).pauseService(request).promise()
+    public async pauseService(request: PauseServiceRequest): Promise<PauseServiceResponse> {
+        return (await this.createSdkClient()).send(new PauseServiceCommand(request))
     }
 
-    public async resumeService(request: AppRunner.ResumeServiceRequest): Promise<AppRunner.ResumeServiceResponse> {
-        return (await this.createSdkClient()).resumeService(request).promise()
+    public async resumeService(request: ResumeServiceRequest): Promise<ResumeServiceResponse> {
+        return (await this.createSdkClient()).send(new ResumeServiceCommand(request))
     }
 
-    public async updateService(request: AppRunner.UpdateServiceRequest): Promise<AppRunner.UpdateServiceResponse> {
-        return (await this.createSdkClient()).updateService(request).promise()
+    public async updateService(request: UpdateServiceRequest): Promise<UpdateServiceResponse> {
+        return (await this.createSdkClient()).send(new UpdateServiceCommand(request))
     }
 
     public async createConnection(
-        request: AppRunner.CreateConnectionRequest
-    ): Promise<AppRunner.CreateConnectionResponse> {
-        return (await this.createSdkClient()).createConnection(request).promise()
+        request: CreateConnectionRequest
+    ): Promise<CreateConnectionResponse> {
+        return (await this.createSdkClient()).send(new CreateConnectionCommand(request))
     }
 
     public async listConnections(
-        request: AppRunner.ListConnectionsRequest = {}
-    ): Promise<AppRunner.ListConnectionsResponse> {
-        return (await this.createSdkClient()).listConnections(request).promise()
+        request: ListConnectionsRequest = {}
+    ): Promise<ListConnectionsResponse> {
+        return (await this.createSdkClient()).send(new ListConnectionsCommand(request))
     }
 
     public async describeService(
-        request: AppRunner.DescribeServiceRequest
-    ): Promise<AppRunner.DescribeServiceResponse> {
-        return (await this.createSdkClient()).describeService(request).promise()
+        request: DescribeServiceRequest
+    ): Promise<DescribeServiceResponse> {
+        return (await this.createSdkClient()).send(new DescribeServiceCommand(request))
     }
 
     public async startDeployment(
-        request: AppRunner.StartDeploymentRequest
-    ): Promise<AppRunner.StartDeploymentResponse> {
-        return (await this.createSdkClient()).startDeployment(request).promise()
+        request: StartDeploymentRequest
+    ): Promise<StartDeploymentResponse> {
+        return (await this.createSdkClient()).send(new StartDeploymentCommand(request))
     }
 
-    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
-        return (await this.createSdkClient()).listOperations(request).promise()
+    public async listOperations(request: ListOperationsRequest): Promise<ListOperationsResponse> {
+        return (await this.createSdkClient()).send(new ListOperationsCommand(request))
     }
 
-    public async deleteService(request: AppRunner.DeleteServiceRequest): Promise<AppRunner.DeleteServiceResponse> {
-        return (await this.createSdkClient()).deleteService(request).promise()
+    public async deleteService(request: DeleteServiceRequest): Promise<DeleteServiceResponse> {
+        return (await this.createSdkClient()).send(new DeleteServiceCommand(request))
     }
 
-    protected async createSdkClient(): Promise<AppRunner> {
-        return await globals.sdkClientBuilder.createAwsService(AppRunner, undefined, this.regionCode)
+    protected async createSdkClient(): Promise<Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, this.regionCode)
     }
 }

@@ -63,12 +63,18 @@ type PrompterBind<TProp, TState> = FormElement<TProp, TState>['bindPrompter']
 type SetDefault<TProp, TState> = FormElement<TProp, TState>['setDefault']
 type ApplyBoundForm<TProp extends Record<string, any>, TState> = ParentFormElement<TProp, TState>['applyBoundForm']
 
-/** Transforms an interface into a collection of FormElements, applied recursively */
+/**
+ * Transforms an interface into a collection of FormElements, applied recursively.
+ *
+ * `NonNullable` is applied to each property since service model types (e.g. AWS SDK v3 shapes)
+ * declare optional properties as `prop?: T | undefined`, which would otherwise widen every
+ * form element to `T | undefined`.
+ */
 type Form<T, TState = T> = {
-    [Property in keyof T]-?: T[Property] extends ExpandWithObject<T[Property]>
-        ? (Form<Required<T[Property]>, TState> & FormElement<T[Property], TState>) &
-              ParentFormElement<T[Property], TState>
-        : FormElement<T[Property], TState>
+    [Property in keyof T]-?: NonNullable<T[Property]> extends ExpandWithObject<NonNullable<T[Property]>>
+        ? (Form<Required<NonNullable<T[Property]>>, TState> & FormElement<NonNullable<T[Property]>, TState>) &
+              ParentFormElement<NonNullable<T[Property]>, TState>
+        : FormElement<NonNullable<T[Property]>, TState>
 }
 
 type FormDataElement<TState, TProp> = ContextOptions<TState, TProp> & { provider?: PrompterProvider<TState, TProp> }

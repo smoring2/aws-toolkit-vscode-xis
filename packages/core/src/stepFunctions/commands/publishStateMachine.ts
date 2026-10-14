@@ -101,7 +101,7 @@ async function createStateMachine(
                 wizardResponse.name
             )
         )
-        outputChannel.appendLine(result.stateMachineArn)
+        outputChannel.appendLine(result.stateMachineArn!)
         logger.info(`Created "${result.stateMachineArn}"`)
         outputChannel.appendLine('')
     } catch (err) {

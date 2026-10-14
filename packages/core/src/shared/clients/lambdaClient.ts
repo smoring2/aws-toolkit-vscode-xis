@@ -3,8 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
-import { _Blob } from 'aws-sdk/clients/lambda'
+import {
+    DeleteFunctionCommand,
+    FunctionConfiguration,
+    FunctionUrlConfig,
+    GetFunctionCommand,
+    GetFunctionCommandOutput,
+    InvocationResponse,
+    InvokeCommand,
+    LambdaClient as Client,
+    ListFunctionUrlConfigsCommand,
+    ListFunctionsCommand,
+    ListFunctionsRequest,
+    UpdateFunctionCodeCommand,
+    waitUntilFunctionUpdatedV2,
+} from '@aws-sdk/client-lambda'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
@@ -22,37 +35,34 @@ export class DefaultLambdaClient {
     public async deleteFunction(name: string): Promise<void> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient
-            .deleteFunction({
+        // `send` rejects with the service error, so no explicit error check is needed.
+        await sdkClient.send(
+            new DeleteFunctionCommand({
                 FunctionName: name,
             })
-            .promise()
-
-        if (response.$response.error) {
-            throw response.$response.error
-        }
+        )
     }
 
-    public async invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse> {
+    public async invoke(name: string, payload?: Uint8Array): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient
-            .invoke({
+        const response = await sdkClient.send(
+            new InvokeCommand({
                 FunctionName: name,
                 LogType: 'Tail',
                 Payload: payload,
             })
-            .promise()
+        )
 
         return response
     }
 
-    public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+    public async *listFunctions(): AsyncIterableIterator<FunctionConfiguration> {
         const client = await this.createSdkClient()
 
-        const request: Lambda.ListFunctionsRequest = {}
+        const request: ListFunctionsRequest = {}
         do {
-            const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
+            const response = await client.send(new ListFunctionsCommand(request))
 
             if (response.Functions) {
                 yield* response.Functions
@@ -62,12 +72,12 @@ export class DefaultLambdaClient {
         } while (request.Marker)
     }
 
-    public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+    public async getFunction(name: string): Promise<GetFunctionCommandOutput> {
         getLogger().debug(`GetFunction called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const response = await client.getFunction({ FunctionName: name }).promise()
+            const response = await client.send(new GetFunctionCommand({ FunctionName: name }))
             // prune `Code` from logs so we don't reveal a signed link to customer resources.
             getLogger().debug('GetFunction returned response (code section pruned): %O', {
                 ...response,
@@ -80,38 +90,37 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+    public async getFunctionUrlConfigs(name: string): Promise<FunctionUrlConfig[]> {
         getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const request = client.listFunctionUrlConfigs({ FunctionName: name })
-            const response = await request.promise()
+            const response = await client.send(new ListFunctionUrlConfigsCommand({ FunctionName: name }))
             // prune `Code` from logs so we don't reveal a signed link to customer resources.
             getLogger().debug('GetFunctionUrlConfig returned response (code section pruned): %O', {
                 ...response,
                 Code: 'Pruned',
             })
-            return response.FunctionUrlConfigs
+            return response.FunctionUrlConfigs ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get Lambda function URLs')
         }
     }
 
-    public async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<Lambda.FunctionConfiguration> {
+    public async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<FunctionConfiguration> {
         getLogger().debug(`updateFunctionCode called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const response = await client
-                .updateFunctionCode({
+            const response = await client.send(
+                new UpdateFunctionCodeCommand({
                     FunctionName: name,
                     Publish: true,
                     ZipFile: zipFile,
                 })
-                .promise()
+            )
             getLogger().debug('updateFunctionCode returned response: %O', response)
-            await client.waitFor('functionUpdated', { FunctionName: name }).promise()
+            await waitUntilFunctionUpdatedV2({ client, maxWaitTime: 5 * 60 }, { FunctionName: name })
 
             return response
         } catch (e) {
@@ -120,10 +129,10 @@ export class DefaultLambdaClient {
         }
     }
 
-    private async createSdkClient(): Promise<Lambda> {
-        return await globals.sdkClientBuilder.createAwsService(
-            Lambda,
-            { httpOptions: { timeout: this.defaultTimeoutInMs } },
+    private async createSdkClient(): Promise<Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(
+            Client,
+            { requestHandler: { requestTimeout: this.defaultTimeoutInMs } },
             this.regionCode
         )
     }

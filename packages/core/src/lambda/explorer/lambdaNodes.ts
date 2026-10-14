@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    FunctionConfiguration,
+} from '@aws-sdk/client-lambda'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
@@ -51,7 +53,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+        const functions: Map<string, FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.client)),
             (configuration) => configuration.FunctionName
         )
@@ -68,7 +70,7 @@ export class LambdaNode extends AWSTreeNodeBase {
 function makeLambdaFunctionNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
     node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')

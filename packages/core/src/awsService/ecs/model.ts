@@ -3,11 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    Cluster as EcsCluster,
+    ContainerDefinition,
+    Service as EcsService,
+    Task,
+} from '@aws-sdk/client-ecs'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../shared/clients/ecsClient'
 import { ResourceTreeNode } from '../../shared/treeview/resource'
 import { getIcon } from '../../shared/icons'
@@ -15,7 +20,7 @@ import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { prepareCommand } from './util'
 
 function createValidTaskFilter(containerName: string) {
-    return function (t: ECS.Task): t is ECS.Task & { taskArn: string } {
+    return function (t: Task): t is Task & { taskArn: string } {
         const managed = !!t.containers?.find(
             (c) => c?.name === containerName && c.managedAgents?.find((a) => a.name === 'ExecuteCommandAgent')
         )
@@ -24,7 +29,7 @@ function createValidTaskFilter(containerName: string) {
     }
 }
 
-interface ContainerDescription extends ECS.ContainerDefinition {
+interface ContainerDescription extends ContainerDefinition {
     readonly clusterArn: string
     readonly taskRoleArn: string
     readonly enableExecuteCommand?: boolean
@@ -82,7 +87,7 @@ export class Service {
 
     public constructor(
         private readonly client: DefaultEcsClient,
-        public readonly description: ECS.Service
+        public readonly description: EcsService
     ) {}
 
     public async listContainers(): Promise<Container[]> {
@@ -154,7 +159,7 @@ export class Cluster {
 
     public constructor(
         private readonly client: DefaultEcsClient,
-        private readonly cluster: ECS.Cluster
+        private readonly cluster: EcsCluster
     ) {}
 
     public listServices(): AsyncCollection<Service[]> {

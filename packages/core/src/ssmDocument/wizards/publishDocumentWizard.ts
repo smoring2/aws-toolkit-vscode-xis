@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DocumentKeyValuesFilter, DocumentType } from '@aws-sdk/client-ssm'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { createInputBox } from '../../shared/ui/inputPrompter'
@@ -27,8 +27,8 @@ export enum PublishSSMDocumentAction {
     QuickUpdate = 'Update',
 }
 
-async function* loadDocuments(region: string, documentType?: SSM.Types.DocumentType) {
-    const filters: SSM.Types.DocumentKeyValuesFilterList = [
+async function* loadDocuments(region: string, documentType?: DocumentType) {
+    const filters: DocumentKeyValuesFilter[] = [
         {
             Key: 'Owner',
             Values: ['Self'],
@@ -61,7 +61,7 @@ function createNamePrompter() {
     })
 }
 
-function createUpdateDocumentPrompter(region: string, documentType?: string) {
+function createUpdateDocumentPrompter(region: string, documentType?: DocumentType) {
     return createQuickPick(loadDocuments(region, documentType), {
         title: localize(
             'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.title',

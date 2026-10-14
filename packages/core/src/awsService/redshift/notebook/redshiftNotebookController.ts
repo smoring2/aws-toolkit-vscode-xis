@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ColumnMetadata, Field } from '@aws-sdk/client-redshift-data'
 import * as vscode from 'vscode'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { ConnectionParams } from '../models/models'
-import { RedshiftData } from 'aws-sdk'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export class RedshiftNotebookController {
@@ -79,8 +79,8 @@ export class RedshiftNotebookController {
             }
 
             let executionId: string | undefined
-            let columnMetadata: RedshiftData.ColumnMetadataList | undefined
-            const records: RedshiftData.SqlRecords = []
+            let columnMetadata: ColumnMetadata[] | undefined
+            const records: Field[][] = []
             let nextToken: string | undefined
             // get all the pages of the result
             do {
@@ -94,7 +94,7 @@ export class RedshiftNotebookController {
                     nextToken = result.statementResultResponse.NextToken
                     executionId = result.executionId
                     columnMetadata = result.statementResultResponse.ColumnMetadata
-                    records.push(...result.statementResultResponse.Records)
+                    records.push(...(result.statementResultResponse.Records ?? []))
                 } else {
                     return new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.text('Query completed — No rows returned.', 'text/plain'),
@@ -116,7 +116,7 @@ export class RedshiftNotebookController {
         })
     }
 
-    public getAsTable(connectionParams: ConnectionParams, columns: string[], records: RedshiftData.SqlRecords) {
+    public getAsTable(connectionParams: ConnectionParams, columns: string[], records: Field[][]) {
         if (!records || records.length === 0) {
             return '<p>No records to display<p>'
         }
@@ -132,7 +132,7 @@ export class RedshiftNotebookController {
         for (const row of records) {
             tableHtml += '<tr>'
             for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-                let cellValue: undefined
+                let cellValue: unknown
                 if (Object.keys(row[columnIndex])[0] !== 'isNull') {
                     cellValue = Object.values(row[columnIndex])[0]
                 }

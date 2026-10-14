@@ -22,9 +22,9 @@ export async function createAppRunnerService(node: AppRunnerNode): Promise<void>
 
         await node.createService(result)
         source =
-            result.SourceConfiguration.CodeRepository !== undefined
+            result.SourceConfiguration?.CodeRepository !== undefined
                 ? 'repository'
-                : result.SourceConfiguration.ImageRepository !== undefined
+                : result.SourceConfiguration?.ImageRepository !== undefined
                   ? result.SourceConfiguration.ImageRepository.ImageRepositoryType === 'ECR_PUBLIC'
                       ? 'ecrPublic'
                       : 'ecr'

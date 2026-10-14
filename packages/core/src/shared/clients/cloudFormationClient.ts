@@ -3,7 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation } from 'aws-sdk'
+import {
+    CloudFormationClient as Client,
+    DeleteStackCommand,
+    DescribeStackResourcesCommand,
+    DescribeStackResourcesOutput,
+    DescribeTypeCommand,
+    DescribeTypeOutput,
+    ListStacksCommand,
+    ListStacksInput,
+    ListStacksOutput,
+    ListTypesCommand,
+    ListTypesInput,
+    ListTypesOutput,
+    StackStatus,
+    StackSummary,
+    TypeSummary,
+} from '@aws-sdk/client-cloudformation'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
@@ -17,34 +33,32 @@ export class DefaultCloudFormationClient {
         const client = await this.createSdkClient()
 
         await client
-            .deleteStack({
+            .send(new DeleteStackCommand({
                 StackName: name,
-            })
-            .promise()
+            }))
     }
 
-    public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
+    public async describeType(typeName: string): Promise<DescribeTypeOutput> {
         const client = await this.createSdkClient()
 
         return await client
-            .describeType({
+            .send(new DescribeTypeCommand({
                 Type: 'RESOURCE',
                 TypeName: typeName,
-            })
-            .promise()
+            }))
     }
 
     public async *listStacks(
         statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    ): AsyncIterableIterator<CloudFormation.StackSummary> {
+    ): AsyncIterableIterator<StackSummary> {
         const client = await this.createSdkClient()
 
-        const request: CloudFormation.ListStacksInput = {
-            StackStatusFilter: statusFilter,
+        const request: ListStacksInput = {
+            StackStatusFilter: statusFilter as StackStatus[],
         }
 
         do {
-            const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
+            const response: ListStacksOutput = await client.send(new ListStacksCommand(request))
 
             if (response.StackSummaries) {
                 yield* response.StackSummaries
@@ -54,25 +68,25 @@ export class DefaultCloudFormationClient {
         } while (request.NextToken)
     }
 
-    public listAllStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
+    public listAllStacks(request: ListStacksInput = {}): AsyncCollection<StackSummary[]> {
         const client = this.createSdkClient()
-        const requester = async (req: CloudFormation.ListStacksInput) => (await client).listStacks(req).promise()
+        const requester = async (req: ListStacksInput) => (await client).send(new ListStacksCommand(req))
         const collection = pageableToCollection(requester, request, 'NextToken', 'StackSummaries')
 
         return collection.filter(isNonNullable)
     }
 
-    public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
+    public async *listTypes(): AsyncIterableIterator<TypeSummary> {
         const client = await this.createSdkClient()
 
-        const request: CloudFormation.ListTypesInput = {
+        const request: ListTypesInput = {
             DeprecatedStatus: 'LIVE',
             Type: 'RESOURCE',
             Visibility: 'PUBLIC',
         }
 
         do {
-            const response: CloudFormation.ListTypesOutput = await client.listTypes(request).promise()
+            const response: ListTypesOutput = await client.send(new ListTypesCommand(request))
 
             if (response.TypeSummaries) {
                 yield* response.TypeSummaries
@@ -82,17 +96,16 @@ export class DefaultCloudFormationClient {
         } while (request.NextToken)
     }
 
-    public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
+    public async describeStackResources(name: string): Promise<DescribeStackResourcesOutput> {
         const client = await this.createSdkClient()
 
         return await client
-            .describeStackResources({
+            .send(new DescribeStackResourcesCommand({
                 StackName: name,
-            })
-            .promise()
+            }))
     }
 
-    private async createSdkClient(): Promise<CloudFormation> {
-        return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+    private async createSdkClient(): Promise<Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, this.regionCode)
     }
 }

@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM } from 'aws-sdk'
+import {
+    Role,
+} from '@aws-sdk/client-iam'
 import { IamClient } from '../../clients/iamClient'
 import { createCommonButtons, createPlusButton, createRefreshButton } from '../buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
@@ -21,26 +23,26 @@ interface RolePrompterOptions {
     readonly title?: string
     readonly helpUrl?: string | vscode.Uri
     readonly noRoleDetail?: string
-    readonly roleFilter?: (role: IAM.Role) => boolean
-    readonly createRole?: () => Promise<IAM.Role>
+    readonly roleFilter?: (role: Role) => boolean
+    readonly createRole?: () => Promise<Role>
 }
 
-export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<IAM.Role> {
-    const placeholderItem: DataQuickPickItem<IAM.Role> = {
+export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<Role> {
+    const placeholderItem: DataQuickPickItem<Role> = {
         label: localize('AWS.rolePrompter.noRoles.title', 'No valid roles found'),
         data: WIZARD_BACK,
         detail: options.noRoleDetail,
     }
 
     const loadItems = () => {
-        const filterRoles = (roles: IAM.Role[]) => (options.roleFilter ? roles.filter(options.roleFilter) : roles)
+        const filterRoles = (roles: Role[]) => (options.roleFilter ? roles.filter(options.roleFilter) : roles)
 
         return client
             .getRoles()
             .map(filterRoles)
             .map((roles) =>
                 roles.map((r) => ({
-                    label: r.RoleName,
+                    label: r.RoleName ?? '',
                     data: r,
                 }))
             )
@@ -62,7 +64,7 @@ export function createRolePrompter(client: IamClient, options: RolePrompterOptio
 }
 
 function addCreateRoleButton(
-    prompter: QuickPickPrompter<IAM.Role>,
+    prompter: QuickPickPrompter<Role>,
     createRole: RolePrompterOptions['createRole']
 ): typeof prompter {
     if (!createRole) {
@@ -71,7 +73,7 @@ function addCreateRoleButton(
 
     const makeRole = () => {
         const items = createRole()
-            .then((role) => [{ label: role.RoleName, data: role }])
+            .then((role) => [{ label: role.RoleName ?? '', data: role }])
             .catch((err) => {
                 getLogger().error('role prompter: Failed to create new role: %s', err)
                 void showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))

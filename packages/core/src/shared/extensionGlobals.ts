@@ -6,7 +6,7 @@
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { LoginManager } from '../auth/deprecated/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
-import { AWSClientBuilder } from './awsClientBuilder'
+import { AWSClientBuilder, AWSClientBuilderV3 } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AwsContextCommands } from './awsContextCommands'
 import { RegionProvider } from './regions/regionProvider'
@@ -197,6 +197,7 @@ export interface ToolkitGlobals {
     awsContext: AwsContext
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
+    sdkClientBuilderV3: AWSClientBuilderV3
     telemetry: TelemetryService & { logger: TelemetryLogger }
     /** template.yaml registry. _Avoid_ calling this until it is actually needed (for SAM features). */
     templateRegistry: Promise<CloudFormationTemplateRegistry>

@@ -9,6 +9,7 @@ import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { WatchedFiles, WatchedItem } from './watchedFiles'
@@ -250,7 +251,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                     try {
                         const parsedLambda = getLambdaDetails({
                             Handler: registeredHandler,
-                            Runtime: registeredRuntime,
+                            Runtime: registeredRuntime as Runtime,
                         })
                         const functionName = handler.split('.').pop()
                         if (

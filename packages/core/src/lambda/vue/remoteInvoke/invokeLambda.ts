@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { _Blob } from 'aws-sdk/clients/lambda'
+
 import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
@@ -89,9 +89,11 @@ export class RemoteInvokeWebview extends VueWebview {
         this.channel.appendLine('Loading response...')
 
         try {
-            const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
+            const funcResponse = await this.client.invoke(this.data.FunctionArn, new TextEncoder().encode(input))
             const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
-            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+            const payload = funcResponse.Payload
+                ? new TextDecoder().decode(funcResponse.Payload)
+                : JSON.stringify({})
 
             this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
             this.channel.appendLine('Logs:')

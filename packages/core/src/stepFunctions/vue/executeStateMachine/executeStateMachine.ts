@@ -61,7 +61,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
             this.channel.appendLine(
                 localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
             )
-            this.channel.appendLine(startExecResponse.executionArn)
+            this.channel.appendLine(startExecResponse.executionArn!)
         } catch (e) {
             executeResult = 'Failed'
             const error = e as Error
@@ -84,8 +84,8 @@ const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
 
 export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
     const wv = new Panel(context.extensionContext, context.outputChannel, {
-        arn: node.details.stateMachineArn,
-        name: node.details.name,
+        arn: node.details.stateMachineArn!,
+        name: node.details.name!,
         region: node.regionCode,
     })
 

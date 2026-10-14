@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    TypeSummary,
+} from '@aws-sdk/client-cloudformation'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -11,7 +14,6 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
-import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { isCloud9 } from '../../../shared/extensionUtilities'
@@ -64,7 +66,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
         const types = await toArrayAsync(this.cloudFormation.listTypes())
         types.sort((a, b) => (a.LastUpdated?.getTime() ?? 0) - (b.LastUpdated?.getTime() ?? 0))
 
-        const availableTypes: Map<string, CloudFormation.TypeSummary> = new Map()
+        const availableTypes: Map<string, TypeSummary> = new Map()
         for (const type of types) {
             if (type.TypeName) {
                 availableTypes.set(type.TypeName!, type)

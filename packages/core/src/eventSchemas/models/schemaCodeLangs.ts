@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '../../shared/lambdaRuntime'
 import { Set as ImmutableSet } from 'immutable'
 import { goRuntimes } from '../../lambda/models/samLambdaRuntime'
 

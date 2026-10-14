@@ -9,6 +9,7 @@ import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
     amazonQDiffScheme,
+    AWSClientBuilderV3,
     DefaultAWSClientBuilder,
     DefaultAwsContext,
     ExtContext,
@@ -94,6 +95,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.sdkClientBuilderV3 = new AWSClientBuilderV3(globals.awsContext)
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 

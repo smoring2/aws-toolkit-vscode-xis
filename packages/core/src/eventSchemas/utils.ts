@@ -3,14 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    RegistrySummary,
+    SchemaSummary,
+    SearchSchemaSummary,
+} from '@aws-sdk/client-schemas'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Schemas } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { SchemaClient } from '../shared/clients/schemaClient'
 
-export async function* listRegistryItems(client: SchemaClient): AsyncIterableIterator<Schemas.RegistrySummary> {
+export async function* listRegistryItems(client: SchemaClient): AsyncIterableIterator<RegistrySummary> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.registries', 'Loading Registry Items...')
     )
@@ -25,7 +29,7 @@ export async function* listRegistryItems(client: SchemaClient): AsyncIterableIte
 export async function* listSchemaItems(
     client: SchemaClient,
     registryName: string
-): AsyncIterableIterator<Schemas.SchemaSummary> {
+): AsyncIterableIterator<SchemaSummary> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.schemaItems', 'Loading Schema Items...')
     )
@@ -41,7 +45,7 @@ export async function* searchSchemas(
     client: SchemaClient,
     keyword: string,
     registryName: string
-): AsyncIterableIterator<Schemas.SearchSchemaSummary> {
+): AsyncIterableIterator<SearchSchemaSummary> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.searching.schemas', 'Searching Schemas...')
     )

@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    SchemaSummary,
+} from '@aws-sdk/client-schemas'
 import * as AWS from '@aws-sdk/types'
-import { Schemas } from 'aws-sdk'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { getLogger, Logger } from '../../shared/logger'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -26,7 +28,7 @@ export interface regionRegistryMap {
 
 export interface registrySchemasMap {
     registryName: string
-    schemaList: Schemas.SchemaSummary[]
+    schemaList: SchemaSummary[]
 }
 
 /**

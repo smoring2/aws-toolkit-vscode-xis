@@ -3,8 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { APIGateway } from 'aws-sdk'
-import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
+import {
+    APIGatewayClient as Client,
+    GetResourcesCommand,
+    GetResourcesRequest,
+    GetRestApisCommand,
+    GetRestApisRequest,
+    GetStagesCommand,
+    Resource,
+    RestApi,
+    Stages,
+    TestInvokeMethodCommand,
+    TestInvokeMethodRequest,
+    TestInvokeMethodResponse,
+} from '@aws-sdk/client-api-gateway'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -12,15 +24,15 @@ export type ApiGatewayClient = ClassToInterfaceType<DefaultApiGatewayClient>
 export class DefaultApiGatewayClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *getResourcesForApi(apiId: string): AsyncIterableIterator<APIGateway.Resource> {
+    public async *getResourcesForApi(apiId: string): AsyncIterableIterator<Resource> {
         const client = await this.createSdkClient()
 
-        const request: APIGateway.GetResourcesRequest = {
+        const request: GetResourcesRequest = {
             restApiId: apiId,
         }
 
         do {
-            const response: APIGateway.Resources = await client.getResources(request).promise()
+            const response = await client.send(new GetResourcesCommand(request))
 
             if (response.items !== undefined && response.items.length > 0) {
                 yield* response.items
@@ -33,20 +45,20 @@ export class DefaultApiGatewayClient {
     public async getStages(apiId: string): Promise<Stages> {
         const client = await this.createSdkClient()
 
-        const request: APIGateway.GetResourcesRequest = {
+        const request: GetResourcesRequest = {
             restApiId: apiId,
         }
 
-        return client.getStages(request).promise()
+        return client.send(new GetStagesCommand(request))
     }
 
     public async *listApis(): AsyncIterableIterator<RestApi> {
         const client = await this.createSdkClient()
 
-        const request: APIGateway.GetRestApisRequest = {}
+        const request: GetRestApisRequest = {}
 
         do {
-            const response: APIGateway.RestApis = await client.getRestApis(request).promise()
+            const response = await client.send(new GetRestApisCommand(request))
 
             if (response.items !== undefined && response.items.length > 0) {
                 yield* response.items
@@ -62,9 +74,9 @@ export class DefaultApiGatewayClient {
         method: string,
         body: string,
         pathWithQueryString: string | undefined
-    ): Promise<APIGateway.TestInvokeMethodResponse> {
+    ): Promise<TestInvokeMethodResponse> {
         const client = await this.createSdkClient()
-        const request: APIGateway.TestInvokeMethodRequest = {
+        const request: TestInvokeMethodRequest = {
             restApiId: apiId,
             resourceId: resourceId,
             httpMethod: method,
@@ -74,10 +86,10 @@ export class DefaultApiGatewayClient {
             request.pathWithQueryString = pathWithQueryString
         }
 
-        return await client.testInvokeMethod(request).promise()
+        return await client.send(new TestInvokeMethodCommand(request))
     }
 
-    private async createSdkClient(): Promise<APIGateway> {
-        return await globals.sdkClientBuilder.createAwsService(APIGateway, undefined, this.regionCode)
+    private async createSdkClient(): Promise<Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, this.regionCode)
     }
 }

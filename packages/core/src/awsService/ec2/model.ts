@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Session } from 'aws-sdk/clients/ssm'
-import { EC2, IAM, SSM } from 'aws-sdk'
+import { Session } from '@aws-sdk/client-ssm'
+import { EC2, SSM } from 'aws-sdk'
+import { Role } from '@aws-sdk/client-iam'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -95,7 +96,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return this.sessionManager.isConnectedTo(instanceId)
     }
 
-    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
+    public async getAttachedIamRole(instanceId: string): Promise<Role | undefined> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
@@ -139,7 +140,7 @@ export class Ec2Connecter implements vscode.Disposable {
             })
         }
 
-        const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
+        const hasPermission = await this.hasProperPermissions(IamRole!.Arn!)
 
         if (!hasPermission) {
             const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)

@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    DescribeLogStreamsRequest,
+    DescribeLogStreamsResponse,
+} from '@aws-sdk/client-cloudwatch-logs'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -10,7 +14,6 @@ import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
-import { CloudWatchLogs } from 'aws-sdk'
 
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../../shared/utilities/collectionUtils'
@@ -83,7 +86,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 
     public async pickLogStream(): Promise<LogSearchChoice> {
         const client = new DefaultCloudWatchLogsClient(this.regionCode)
-        const request: CloudWatchLogs.DescribeLogStreamsRequest = {
+        const request: DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',
             descending: true,
@@ -181,7 +184,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 }
 
 export function convertDescribeLogToQuickPickItems(
-    response: CloudWatchLogs.DescribeLogStreamsResponse
+    response: DescribeLogStreamsResponse
 ): vscode.QuickPickItem[] {
     return (response.logStreams ?? []).map<vscode.QuickPickItem>((stream) => ({
         label: stream.logStreamName!,

@@ -7,7 +7,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import xml2js = require('xml2js')
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { StackSummary } from '@aws-sdk/client-cloudformation'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
@@ -22,7 +23,7 @@ import globals from '../shared/extensionGlobals'
 
 export async function* listCloudFormationStacks(
     client: CloudFormationClient
-): AsyncIterableIterator<CloudFormation.StackSummary> {
+): AsyncIterableIterator<StackSummary> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(
@@ -36,7 +37,7 @@ export async function* listCloudFormationStacks(
     }
 }
 
-export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<FunctionConfiguration> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...')
     )
@@ -51,11 +52,11 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
 }
 
 /**
- * Returns filename and function name corresponding to a Lambda.FunctionConfiguration
+ * Returns filename and function name corresponding to a FunctionConfiguration
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
+export function getLambdaDetails(configuration: FunctionConfiguration): {
     fileName: string
     functionName: string
 } {

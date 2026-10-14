@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+    StateMachineListItem,
+} from '@aws-sdk/client-sfn'
 import * as os from 'os'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
@@ -65,9 +67,9 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const functions: Map<string, StepFunctions.StateMachineListItem> = toMap(
+        const functions: Map<string, StateMachineListItem> = toMap(
             await toArrayAsync(listStateMachines(this.client)),
-            (details) => details.name
+            (details) => details.name!
         )
 
         updateInPlace(
@@ -83,14 +85,14 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
-        public details: StepFunctions.StateMachineListItem
+        public details: StateMachineListItem
     ) {
         super('')
         this.update(details)
         this.iconPath = getIcon('aws-stepfunctions-preview')
     }
 
-    public update(details: StepFunctions.StateMachineListItem): void {
+    public update(details: StateMachineListItem): void {
         this.details = details
         this.label = this.details.name || ''
         this.tooltip = `${this.details.name}${os.EOL}${this.details.stateMachineArn}`
@@ -101,7 +103,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     }
 
     public get arn(): string {
-        return this.details.stateMachineArn
+        return this.details.stateMachineArn!
     }
 
     public get name(): string {
@@ -116,7 +118,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
 function makeStateMachineNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    details: StepFunctions.StateMachineListItem
+    details: StateMachineListItem
 ): StateMachineNode {
     const node = new StateMachineNode(parent, regionCode, details)
     node.contextValue = contextValueStateMachine

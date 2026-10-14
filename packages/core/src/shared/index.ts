@@ -12,7 +12,7 @@ export { initialize, isWeb, ToolkitGlobals, default as globals } from './extensi
 export { activate as activateLogger } from './logger/activation'
 export { activate as activateTelemetry } from './telemetry/activation'
 export { DefaultAwsContext } from './awsContext'
-export { DefaultAWSClientBuilder, ServiceOptions } from './awsClientBuilder'
+export { AWSClientBuilderV3, DefaultAWSClientBuilder, ServiceOptions } from './awsClientBuilder'
 export { Settings, DevSettings } from './settings'
 export * from './extensionUtilities'
 export * from './extensionStartup'

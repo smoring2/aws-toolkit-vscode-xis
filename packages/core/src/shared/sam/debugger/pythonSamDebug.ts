@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '../../lambdaRuntime'
 import * as os from 'os'
 import * as path from 'path'
 import {

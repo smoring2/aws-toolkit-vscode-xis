@@ -222,9 +222,9 @@ export class Session {
                     ideVersion: extensionVersion,
                 },
             }
-            const response = await client.sendTelemetryEvent(params).promise()
+            const response = await client.sendTelemetryEvent(params)
             getLogger().debug(
-                `${featureName}: successfully sent docGenerationEvent: ConversationId: ${docGenerationEvent.conversationId} RequestId: ${response.$response.requestId}`
+                `${featureName}: successfully sent docGenerationEvent: ConversationId: ${docGenerationEvent.conversationId} RequestId: ${response.$metadata.requestId}`
             )
         } catch (e) {
             getLogger().error(

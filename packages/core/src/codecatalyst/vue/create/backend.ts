@@ -33,7 +33,7 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
-import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetSourceRepositoryCloneUrlsRequest } from '@aws-sdk/client-codecatalyst'
 import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 
 interface LinkedResponse {

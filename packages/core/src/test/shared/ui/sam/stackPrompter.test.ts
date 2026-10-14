@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
+import { StackSummary } from '@aws-sdk/client-cloudformation'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as AwsConsoleModule from '../../../../shared/awsConsole'
@@ -31,23 +31,23 @@ describe('createStackPrompter', () => {
 
     it('should create a prompter with existing stacks', async () => {
         // Arrange
-        const stackSummaries: CloudFormation.StackSummary[][] = [
+        const stackSummaries: StackSummary[][] = [
             [
                 {
                     StackName: 'stack1',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
                 {
                     StackName: 'stack2',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
                 {
                     StackName: 'stack3',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
             ],
         ]
         const expectedItems = [

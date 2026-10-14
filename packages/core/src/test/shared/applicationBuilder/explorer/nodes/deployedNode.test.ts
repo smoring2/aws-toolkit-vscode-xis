@@ -4,6 +4,7 @@
  */
 import assert from 'assert'
 import * as vscode from 'vscode'
+import { GetFunctionCommandOutput } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import {
     DeployedResource,
@@ -169,7 +170,7 @@ describe('generateDeployedNode', () => {
                     FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:my-project-lambda-function',
                     Runtime: 'python3.12',
                 },
-            } as AWS.Lambda.GetFunctionResponse
+            } as GetFunctionCommandOutput
 
             mockDefaultLambdaClientInstance.getFunction.resolves(defaultLambdaClientGetFunctionResponse)
 

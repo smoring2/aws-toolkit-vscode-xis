@@ -4,8 +4,15 @@
  */
 
 import assert from 'assert'
-import { AWSError, Request, S3 } from 'aws-sdk'
-import { DeleteObjectsRequest, ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
+import {
+    _Error,
+    DeleteObjectsRequest,
+    ListObjectVersionsOutput,
+    ListObjectVersionsRequest,
+    PutObjectRequest,
+    S3Client,
+} from '@aws-sdk/client-s3'
+import * as libStorage from '@aws-sdk/lib-storage'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFolder, DefaultS3Client, toFile } from '../../../shared/clients/s3Client'
@@ -13,7 +20,7 @@ import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3C
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
 import sinon from 'sinon'
-import { Stub, stub } from '../../utilities/stubber'
+import { stub } from '../../utilities/stubber'
 
 class FakeProgressCaptor {
     public progress = 0
@@ -53,10 +60,12 @@ describe('DefaultS3Client', function () {
     const maxResults = 20
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
-    const error: AWSError = new FakeAwsError('Expected failure') as AWSError
+    const error = new FakeAwsError('Expected failure')
     const bucket = new DefaultBucket({ partitionId: partition, name: bucketName, region })
 
-    let mockS3: S3
+    let mockS3: S3Client
+    /** Stubs for each AWS SDK v3 command, keyed by the command class name. */
+    let commandStubs: Record<string, sinon.SinonStub>
 
     class ListObjectVersionsFixtures {
         public readonly firstPageRequest: ListObjectVersionsRequest = {
@@ -111,27 +120,28 @@ describe('DefaultS3Client', function () {
     }
 
     beforeEach(function () {
-        mockS3 = {} as any as S3
+        commandStubs = {}
+        mockS3 = {
+            send: (command: any) => commandStub(command.constructor.name)(command.input),
+        } as unknown as S3Client
     })
 
-    function success<T>(output?: T): Request<T, AWSError> {
-        return {
-            promise: () => Promise.resolve(output),
-            createReadStream() {
-                return FakeFileStreams.readStreamFrom(fileData)
-            },
-        } as Request<any, AWSError>
+    function commandStub(name: string): sinon.SinonStub {
+        commandStubs[name] = commandStubs[name] ?? sinon.stub()
+        return commandStubs[name]
     }
 
-    function failure(): Request<any, AWSError> {
-        return {
-            promise: () => Promise.reject(error),
-            createReadStream() {
-                const readStream = FakeFileStreams.readStreamFrom(fileData)
-                readStream.destroy(error)
-                return readStream
-            },
-        } as Request<any, AWSError>
+    /** Registers `s` as the handler of the given AWS SDK v3 command. */
+    function setCommandStub(name: string, s: sinon.SinonStub): void {
+        commandStubs[name] = s
+    }
+
+    function success<T>(output?: T): Promise<T> {
+        return Promise.resolve((output ?? {}) as T)
+    }
+
+    function failure(): Promise<never> {
+        return Promise.reject(error)
     }
 
     function createClient({
@@ -145,7 +155,7 @@ describe('DefaultS3Client', function () {
     describe('createBucket', function () {
         it('creates a bucket', async function () {
             const createBucketSpy = sinon.stub().returns(success())
-            mockS3.createBucket = createBucketSpy
+            setCommandStub('CreateBucketCommand', createBucketSpy)
 
             const response = await createClient().createBucket({ bucketName })
 
@@ -162,7 +172,7 @@ describe('DefaultS3Client', function () {
 
         it('removes the region code for us-east-1', async function () {
             const createBucketSpy = sinon.stub().returns(success())
-            mockS3.createBucket = createBucketSpy
+            setCommandStub('CreateBucketCommand', createBucketSpy)
 
             const response = await createClient({ regionCode: 'us-east-1' }).createBucket({ bucketName })
 
@@ -179,7 +189,7 @@ describe('DefaultS3Client', function () {
 
         it('throws an Error on failure', async function () {
             const createBucketSpy = sinon.stub().returns(failure())
-            mockS3.createBucket = createBucketSpy
+            setCommandStub('CreateBucketCommand', createBucketSpy)
 
             await assert.rejects(createClient().createBucket({ bucketName }), error)
         })
@@ -203,9 +213,9 @@ describe('DefaultS3Client', function () {
             deleteObjStub = sinon.stub()
             deleteBucketStub = sinon.stub()
 
-            mockS3.listObjectVersions = listStub
-            mockS3.deleteObjects = deleteObjStub
-            mockS3.deleteBucket = deleteBucketStub
+            setCommandStub('ListObjectVersionsCommand', listStub)
+            setCommandStub('DeleteObjectsCommand', deleteObjStub)
+            setCommandStub('DeleteBucketCommand', deleteBucketStub)
         })
 
         it('empties a bucket and deletes it', async function () {
@@ -257,7 +267,7 @@ describe('DefaultS3Client', function () {
     describe('createFolder', function () {
         it('creates a folder', async function () {
             const s = sinon.stub().returns(success())
-            mockS3.upload = s
+            setCommandStub('PutObjectCommand', s)
 
             const response = await createClient().createFolder({ bucketName, path: folderPath })
 
@@ -269,7 +279,7 @@ describe('DefaultS3Client', function () {
 
         it('throws an Error on failure', async function () {
             const s = sinon.stub().returns(failure())
-            mockS3.upload = s
+            setCommandStub('PutObjectCommand', s)
 
             await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), error)
         })
@@ -277,8 +287,8 @@ describe('DefaultS3Client', function () {
 
     describe('downloadFile', function () {
         it('downloads a file', async function () {
-            const s = sinon.stub().returns(success())
-            mockS3.getObject = s
+            const s = sinon.stub().returns(success({ Body: FakeFileStreams.readStreamFrom(fileData) }))
+            setCommandStub('GetObjectCommand', s)
 
             const fileStreams = new FakeFileStreams({ readData: fileData })
             const progressCaptor = new FakeProgressCaptor()
@@ -298,7 +308,7 @@ describe('DefaultS3Client', function () {
 
         it('throws an Error on failure', async function () {
             const s = sinon.stub().returns(failure())
-            mockS3.getObject = s
+            setCommandStub('GetObjectCommand', s)
 
             await assert.rejects(
                 createClient().downloadFile({
@@ -313,12 +323,11 @@ describe('DefaultS3Client', function () {
 
     describe('uploadFile', function () {
         it('uploads a file', async function () {
-            const mockManagedUpload = stub(S3.ManagedUpload)
-            mockManagedUpload.promise.resolves({ Location: '', ETag: '', Bucket: '', Key: '' })
-            mockManagedUpload.on.returns(undefined)
+            const mockManagedUpload = stub(libStorage.Upload)
+            mockManagedUpload.done.resolves({ Location: '', ETag: '', Bucket: '', Key: '' } as any)
+            mockManagedUpload.on.returns(undefined as unknown as libStorage.Upload)
 
-            const uploadStub = sinon.stub().returns(mockManagedUpload)
-            mockS3.upload = uploadStub
+            const uploadStub = sinon.stub(libStorage, 'Upload').returns(mockManagedUpload as any)
 
             const fileStreams = new FakeFileStreams({ readData: fileData, readAutomatically: true })
             const progressCaptor = new FakeProgressCaptor()
@@ -334,7 +343,7 @@ describe('DefaultS3Client', function () {
             assert(uploadStub.calledOnce)
             assert(mockManagedUpload.on.calledOnceWith('httpUploadProgress', sinon.match.any))
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            const uploadArgs: S3.PutObjectRequest = uploadStub.firstCall.args[0]
+            const uploadArgs: PutObjectRequest = uploadStub.firstCall.args[0].params
             assert.strictEqual(uploadArgs.Bucket, bucketName)
             assert.strictEqual(uploadArgs.Key, fileKey)
             assert.strictEqual(uploadArgs.ContentType, 'image/jpeg')
@@ -351,12 +360,11 @@ describe('DefaultS3Client', function () {
             // TODO: rejected promise here since the impl. does not await the upload anymore
 
             const expectedError = new Error('Expected an error')
-            const mockManagedUpload = stub(S3.ManagedUpload)
-            mockManagedUpload.promise.rejects(expectedError)
-            mockManagedUpload.on.returns(undefined)
+            const mockManagedUpload = stub(libStorage.Upload)
+            mockManagedUpload.done.rejects(expectedError)
+            mockManagedUpload.on.returns(undefined as unknown as libStorage.Upload)
 
-            const uploadStub = sinon.stub().returns(mockManagedUpload)
-            mockS3.upload = uploadStub
+            sinon.stub(libStorage, 'Upload').returns(mockManagedUpload as any)
 
             const managedUpload = await createClient().uploadFile({
                 bucketName,
@@ -364,7 +372,7 @@ describe('DefaultS3Client', function () {
                 content: fileLocation,
             })
             try {
-                await managedUpload.promise()
+                await managedUpload.done()
             } catch (e) {
                 assert.strictEqual(e, expectedError)
             }
@@ -382,8 +390,8 @@ describe('DefaultS3Client', function () {
                 .returns(success({ LocationConstraint: region }))
                 .onSecondCall()
                 .returns(success({ LocationConstraint: 'outOfRegion' }))
-            mockS3.listBuckets = listStub
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('ListBucketsCommand', listStub)
+            setCommandStub('GetBucketLocationCommand', locationStub)
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
                 buckets: [
@@ -406,8 +414,8 @@ describe('DefaultS3Client', function () {
                 .stub()
                 .onFirstCall()
                 .returns(success({ LocationConstraint: region }))
-            mockS3.listBuckets = listStub
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('ListBucketsCommand', listStub)
+            setCommandStub('GetBucketLocationCommand', locationStub)
 
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
@@ -418,12 +426,10 @@ describe('DefaultS3Client', function () {
         })
 
         it(`Filters buckets when it can't get region`, async () => {
-            const mockResponse = stub(Request<any, AWSError>) as any as Stub<Request<any, AWSError>>
-            mockResponse.promise.rejects(undefined)
             const listStub = sinon.stub().returns(success({ Buckets: [{ Name: bucketName }] }))
-            mockS3.listBuckets = listStub
-            const locationStub = sinon.stub().returns(mockResponse)
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('ListBucketsCommand', listStub)
+            const locationStub = sinon.stub().rejects(undefined)
+            setCommandStub('GetBucketLocationCommand', locationStub)
 
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
@@ -433,9 +439,9 @@ describe('DefaultS3Client', function () {
 
         it('throws an Error on listBuckets failure', async function () {
             const listStub = sinon.stub().returns(failure())
-            mockS3.listBuckets = listStub
+            setCommandStub('ListBucketsCommand', listStub)
             const locationStub = sinon.stub()
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('GetBucketLocationCommand', locationStub)
 
             await assert.rejects(createClient().listBuckets(), error)
 
@@ -444,9 +450,9 @@ describe('DefaultS3Client', function () {
 
         it('returns region from exception on getBucketLocation failure', async function () {
             const listStub = sinon.stub().returns(success({ Buckets: [{ Name: bucketName }] }))
-            mockS3.listBuckets = listStub
+            setCommandStub('ListBucketsCommand', listStub)
             const locationStub = sinon.stub().returns(failure())
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('GetBucketLocationCommand', locationStub)
 
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
@@ -464,13 +470,13 @@ describe('DefaultS3Client', function () {
             const listStub = sinon
                 .stub()
                 .returns(success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] }))
-            mockS3.listBuckets = listStub
+            setCommandStub('ListBucketsCommand', listStub)
             const locationStub = sinon.stub().callsFake((param: { Bucket: string }) => {
                 if (param.Bucket && param.Bucket === bucketName) {
                     return success({ LocationConstraint: '' })
                 }
             })
-            mockS3.getBucketLocation = locationStub
+            setCommandStub('GetBucketLocationCommand', locationStub)
 
             const response = await createClient({ regionCode: 'us-east-1' }).listBuckets()
             assert.deepStrictEqual(response, {
@@ -496,7 +502,7 @@ describe('DefaultS3Client', function () {
                     NextContinuationToken: nextContinuationToken,
                 })
             )
-            mockS3.listObjectsV2 = listStub
+            setCommandStub('ListObjectsV2Command', listStub)
 
             const response = await createClient().listFiles({ bucketName, folderPath, continuationToken, maxResults })
             assert.deepStrictEqual(response, {
@@ -519,7 +525,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on listFiles failure', async function () {
-            mockS3.listObjectsV2 = sinon.stub().returns(failure())
+            setCommandStub('ListObjectsV2Command', sinon.stub().returns(failure()))
 
             await assert.rejects(createClient().listFiles({ bucketName, folderPath, continuationToken }), error)
         })
@@ -531,7 +537,7 @@ describe('DefaultS3Client', function () {
 
         it('lists objects and their versions with a continuation token for the next page of results', async function () {
             const listStub = sinon.stub().returns(success(firstPageResponse))
-            mockS3.listObjectVersions = listStub
+            setCommandStub('ListObjectVersionsCommand', listStub)
 
             const response = await createClient().listObjectVersions({ bucketName })
 
@@ -546,7 +552,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on listObjectVersions failure', async function () {
-            mockS3.listObjectVersions = sinon.stub().returns(failure())
+            setCommandStub('ListObjectVersionsCommand', sinon.stub().returns(failure()))
 
             await assert.rejects(createClient().listObjectVersions({ bucketName }), error)
         })
@@ -558,7 +564,7 @@ describe('DefaultS3Client', function () {
                 .returns(success(firstPageResponse))
                 .onSecondCall()
                 .returns(success(secondPageResponse))
-            mockS3.listObjectVersions = listStub
+            setCommandStub('ListObjectVersionsCommand', listStub)
 
             const iterable = createClient().listObjectVersionsIterable({ bucketName })
 
@@ -579,7 +585,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on listObjectVersionsIterable iterate failure', async function () {
-            mockS3.listObjectVersions = sinon.stub().returns(failure())
+            setCommandStub('ListObjectVersionsCommand', sinon.stub().returns(failure()))
 
             const iterable = createClient().listObjectVersionsIterable({ bucketName })
             await assert.rejects(iterable.next(), error)
@@ -589,7 +595,7 @@ describe('DefaultS3Client', function () {
     describe('deleteObject', function () {
         it('deletes an object', async function () {
             const deleteStub = sinon.stub().returns(success({}))
-            mockS3.deleteObject = deleteStub
+            setCommandStub('DeleteObjectCommand', deleteStub)
 
             await createClient().deleteObject({ bucketName, key: fileKey })
 
@@ -597,7 +603,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
-            mockS3.deleteObject = sinon.stub().returns(failure())
+            setCommandStub('DeleteObjectCommand', sinon.stub().returns(failure()))
 
             await assert.rejects(createClient().deleteObject({ bucketName, key: fileKey }), error)
         })
@@ -606,7 +612,7 @@ describe('DefaultS3Client', function () {
     describe('deleteObjects', function () {
         it('deletes objects', async function () {
             const deleteStub = sinon.stub().returns(success({}))
-            mockS3.deleteObjects = deleteStub
+            setCommandStub('DeleteObjectsCommand', deleteStub)
 
             const response = await createClient().deleteObjects({
                 bucketName,
@@ -636,14 +642,14 @@ describe('DefaultS3Client', function () {
         })
 
         it('returns a list of errors on partial failure', async function () {
-            const error: S3.Error = {
+            const error: _Error = {
                 Key: folderPath,
                 VersionId: folderVersionId,
                 Code: '404',
                 Message: 'Expected failure',
             }
             const deleteStub = sinon.stub().returns(success({ Errors: [error] }))
-            mockS3.deleteObjects = deleteStub
+            setCommandStub('DeleteObjectsCommand', deleteStub)
 
             const response = await createClient().deleteObjects({
                 bucketName,
@@ -655,7 +661,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
-            mockS3.deleteObjects = sinon.stub().returns(failure())
+            setCommandStub('DeleteObjectsCommand', sinon.stub().returns(failure()))
 
             await assert.rejects(createClient().deleteObjects({ bucketName, objects: [{ key: fileKey }] }), error)
         })

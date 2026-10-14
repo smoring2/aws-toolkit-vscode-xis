@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
 import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
-import { ServiceOptions } from '../../shared/awsClientBuilder'
+import { ResponseMetadataBearer, ServiceError, createAwsJsonClient } from '../../shared/awsJsonClient'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
-import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
 import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
@@ -95,41 +93,31 @@ export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         const cwsprConfig = getCodewhispererConfig()
-        return (await globals.sdkClientBuilder.createAwsService(
-            Service,
-            {
-                apiConfig: apiConfig,
-                region: cwsprConfig.region,
-                credentials: await AuthUtil.instance.getCredentials(),
-                endpoint: cwsprConfig.endpoint,
-                onRequestSetup: [
-                    (req) => {
-                        if (req.operation === 'listRecommendations') {
-                            req.on('build', () => {
-                                req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
-                            })
-                        }
-                        // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
-                        // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
 
-                        if (hasVendedIamCredentials()) {
-                            req.on('retry', (resp) => {
-                                if (
-                                    resp.error?.code === 'AccessDeniedException' &&
-                                    resp.error.message.match(/expired/i)
-                                ) {
-                                    AuthUtil.instance.reauthenticate().catch((e) => {
-                                        getLogger().error('reauthenticate failed: %s', (e as Error).message)
-                                    })
-                                    resp.error.retryable = true
-                                }
-                            })
-                        }
-                    },
-                ],
-            } as ServiceOptions,
-            undefined
-        )) as CodeWhispererClient
+        return createAwsJsonClient<CodeWhispererClient>(apiConfig, {
+            region: cwsprConfig.region,
+            endpoint: cwsprConfig.endpoint,
+            credentials: await AuthUtil.instance.getCredentials(),
+            operationHeaders: {
+                listRecommendations: { 'x-amzn-codewhisperer-optout': `${isOptedOut}` },
+            },
+            shouldRetry: (error: ServiceError) => {
+                // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
+                // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
+                if (
+                    hasVendedIamCredentials() &&
+                    error.code === 'AccessDeniedException' &&
+                    error.message.match(/expired/i)
+                ) {
+                    AuthUtil.instance.reauthenticate().catch((e) => {
+                        getLogger().error('reauthenticate failed: %s', (e as Error).message)
+                    })
+                    return true
+                }
+
+                return false
+            },
+        })
     }
 
     async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
@@ -138,30 +126,20 @@ export class DefaultCodeWhispererClient {
         const bearerToken = await AuthUtil.instance.getBearerToken()
         session.setSdkApiCallStart()
         const cwsprConfig = getCodewhispererConfig()
-        return (await globals.sdkClientBuilder.createAwsService(
-            Service,
-            {
-                apiConfig: userApiConfig,
-                region: cwsprConfig.region,
-                endpoint: cwsprConfig.endpoint,
-                maxRetries: maxRetries,
-                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
-                onRequestSetup: [
-                    (req) => {
-                        req.on('build', ({ httpRequest }) => {
-                            httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
-                        })
-                        if (req.operation === 'generateCompletions') {
-                            req.on('build', () => {
-                                req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
-                                req.httpRequest.headers['Connection'] = keepAliveHeader
-                            })
-                        }
-                    },
-                ],
-            } as ServiceOptions,
-            undefined
-        )) as CodeWhispererUserClient
+
+        return createAwsJsonClient<CodeWhispererUserClient>(userApiConfig, {
+            region: cwsprConfig.region,
+            endpoint: cwsprConfig.endpoint,
+            maxRetries: maxRetries,
+            bearerToken: bearerToken,
+            operationHeaders: {
+                generateCompletions: {
+                    'x-amzn-codewhisperer-optout': `${isOptedOut}`,
+                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                    Connection: keepAliveHeader,
+                },
+            },
+        })
     }
 
     private isBearerTokenAuth(): boolean {
@@ -171,69 +149,69 @@ export class DefaultCodeWhispererClient {
     public async generateRecommendations(
         request: GenerateRecommendationsRequest
     ): Promise<GenerateRecommendationsResponse> {
-        return (await this.createSdkClient()).generateRecommendations(request).promise()
+        return (await this.createSdkClient()).generateRecommendations(request)
     }
 
     public async listRecommendations(request: ListRecommendationsRequest): Promise<ListRecommendationsResponse> {
         if (this.isBearerTokenAuth()) {
-            return await (await this.createUserSdkClient()).generateCompletions(request).promise()
+            return await (await this.createUserSdkClient()).generateCompletions(request)
         }
-        return (await this.createSdkClient()).listRecommendations(request).promise()
+        return (await this.createSdkClient()).listRecommendations(request)
     }
 
     public async createUploadUrl(
         request: CreateUploadUrlRequest
-    ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
+    ): Promise<CreateUploadUrlResponse & ResponseMetadataBearer> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createUploadUrl(request).promise()
+            return (await this.createUserSdkClient()).createUploadUrl(request)
         }
-        return (await this.createSdkClient()).createCodeScanUploadUrl(request).promise()
+        return (await this.createSdkClient()).createCodeScanUploadUrl(request)
     }
 
     public async createCodeScan(
         request: CreateCodeScanRequest
-    ): Promise<PromiseResult<CreateCodeScanResponse, AWSError>> {
+    ): Promise<CreateCodeScanResponse & ResponseMetadataBearer> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).startCodeAnalysis(request).promise()
+            return (await this.createUserSdkClient()).startCodeAnalysis(request)
         }
-        return (await this.createSdkClient()).createCodeScan(request).promise()
+        return (await this.createSdkClient()).createCodeScan(request)
     }
 
     public async getCodeScan(
         request: GetCodeScanRequest
-    ): Promise<PromiseResult<CodeWhispererClient.GetCodeScanResponse, AWSError>> {
+    ): Promise<CodeWhispererClient.GetCodeScanResponse & ResponseMetadataBearer> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).getCodeAnalysis(request).promise()
+            return (await this.createUserSdkClient()).getCodeAnalysis(request)
         }
-        return (await this.createSdkClient()).getCodeScan(request).promise()
+        return (await this.createSdkClient()).getCodeScan(request)
     }
 
     public async listCodeScanFindings(
         request: ListCodeScanFindingsRequest
-    ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
+    ): Promise<ListCodeScanFindingsResponse & ResponseMetadataBearer> {
         if (this.isBearerTokenAuth()) {
             const req = {
                 jobId: request.jobId,
                 nextToken: request.nextToken,
                 codeAnalysisFindingsSchema: 'codeanalysis/findings/1.0',
             } as CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
-            return (await this.createUserSdkClient()).listCodeAnalysisFindings(req).promise()
+            return (await this.createUserSdkClient()).listCodeAnalysisFindings(req)
         }
-        return (await this.createSdkClient())
-            .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
-            .promise()
+        return (await this.createSdkClient()).listCodeScanFindings(
+            request as CodeWhispererClient.ListCodeScanFindingsRequest
+        )
     }
 
     public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
         const client = await this.createUserSdkClient()
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
-            client.listAvailableCustomizations(request).promise()
+            client.listAvailableCustomizations(request)
         return pageableToCollection(requester, {}, 'nextToken')
             .promise()
             .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'
                 for (const resp of resps) {
-                    const requestId = resp.$response.requestId
+                    const requestId = resp.$metadata.requestId
                     logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
                     for (const [index, c] of resp.customizations.entries()) {
                         const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
@@ -260,8 +238,8 @@ export class DefaultCodeWhispererClient {
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
-        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()
-        getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields)
+        getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$metadata.requestId}`)
     }
 
     /**
@@ -271,8 +249,8 @@ export class DefaultCodeWhispererClient {
      */
     public async codeModernizerStartCodeTransformation(
         request: CodeWhispererUserClient.StartTransformationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.StartTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).startTransformation(request).promise()
+    ): Promise<CodeWhispererUserClient.StartTransformationResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).startTransformation(request)
     }
 
     /**
@@ -282,8 +260,8 @@ export class DefaultCodeWhispererClient {
      */
     public async codeModernizerStopCodeTransformation(
         request: CodeWhispererUserClient.StopTransformationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.StopTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).stopTransformation(request).promise()
+    ): Promise<CodeWhispererUserClient.StopTransformationResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).stopTransformation(request)
     }
 
     /**
@@ -293,9 +271,9 @@ export class DefaultCodeWhispererClient {
      */
     public async codeModernizerGetCodeTransformation(
         request: CodeWhispererUserClient.GetTransformationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationResponse, AWSError>> {
+    ): Promise<CodeWhispererUserClient.GetTransformationResponse & ResponseMetadataBearer> {
         // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
-        return (await this.createUserSdkClient(8)).getTransformation(request).promise()
+        return (await this.createUserSdkClient(8)).getTransformation(request)
     }
 
     /**
@@ -306,8 +284,8 @@ export class DefaultCodeWhispererClient {
      */
     public async codeModernizerResumeTransformation(
         request: CodeWhispererUserClient.ResumeTransformationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.ResumeTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).resumeTransformation(request).promise()
+    ): Promise<CodeWhispererUserClient.ResumeTransformationResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).resumeTransformation(request)
     }
 
     /**
@@ -317,33 +295,33 @@ export class DefaultCodeWhispererClient {
      */
     public async codeModernizerGetCodeTransformationPlan(
         request: CodeWhispererUserClient.GetTransformationPlanRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.GetTransformationPlanResponse, AWSError>> {
+    ): Promise<CodeWhispererUserClient.GetTransformationPlanResponse & ResponseMetadataBearer> {
         // instead of the default of 3 retries, use 8 retries for this API which is polled every 5 seconds
-        return (await this.createUserSdkClient(8)).getTransformationPlan(request).promise()
+        return (await this.createUserSdkClient(8)).getTransformationPlan(request)
     }
 
     public async startCodeFixJob(
         request: CodeWhispererUserClient.StartCodeFixJobRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.StartCodeFixJobResponse, AWSError>> {
-        return (await this.createUserSdkClient()).startCodeFixJob(request).promise()
+    ): Promise<CodeWhispererUserClient.StartCodeFixJobResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).startCodeFixJob(request)
     }
 
     public async getCodeFixJob(
         request: CodeWhispererUserClient.GetCodeFixJobRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.GetCodeFixJobResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getCodeFixJob(request).promise()
+    ): Promise<CodeWhispererUserClient.GetCodeFixJobResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).getCodeFixJob(request)
     }
 
     public async startTestGeneration(
         request: CodeWhispererUserClient.StartTestGenerationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.StartTestGenerationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).startTestGeneration(request).promise()
+    ): Promise<CodeWhispererUserClient.StartTestGenerationResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).startTestGeneration(request)
     }
 
     public async getTestGeneration(
         request: CodeWhispererUserClient.GetTestGenerationRequest
-    ): Promise<PromiseResult<CodeWhispererUserClient.GetTestGenerationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).getTestGeneration(request).promise()
+    ): Promise<CodeWhispererUserClient.GetTestGenerationResponse & ResponseMetadataBearer> {
+        return (await this.createUserSdkClient()).getTestGeneration(request)
     }
 }
 

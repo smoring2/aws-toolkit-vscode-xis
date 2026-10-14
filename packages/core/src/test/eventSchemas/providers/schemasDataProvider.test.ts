@@ -24,8 +24,8 @@ describe('schemasDataProvider', function () {
     const registrySummary2 = { RegistryName: testRegistry2 }
     const schemaSummary = { SchemaName: testSchema }
     const schemaSummary2 = { SchemaName: testSchema2 }
-    const testCredentials = {} as any as AWS.Credentials
-    const testCredentials2 = {} as any as AWS.Credentials
+    const testCredentials = {} as any
+    const testCredentials2 = {} as any
 
     let dataProviderObject: SchemasDataProvider
     let cacheData: Cache

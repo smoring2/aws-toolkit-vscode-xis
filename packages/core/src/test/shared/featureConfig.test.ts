@@ -5,24 +5,17 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { AWSError, Request } from 'aws-sdk'
 import { Features, FeatureConfigProvider, featureDefinitions, FeatureName } from '../../shared/featureConfig'
-import { ListFeatureEvaluationsResponse } from '../../codewhisperer'
 import { createSpyClient } from '../codewhisperer/testUtil'
 import { mockFeatureConfigsData } from '../fake/mockFeatureConfigData'
 
 describe('FeatureConfigProvider', () => {
     beforeEach(async () => {
         const clientSpy = await createSpyClient()
-        sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
-            promise: () =>
-                Promise.resolve({
-                    $response: {
-                        requestId: '',
-                    },
-                    featureEvaluations: mockFeatureConfigsData,
-                }),
-        } as Request<ListFeatureEvaluationsResponse, AWSError>)
+        sinon.stub(clientSpy, 'listFeatureEvaluations').resolves({
+            $metadata: { requestId: '' },
+            featureEvaluations: mockFeatureConfigsData,
+        })
         await FeatureConfigProvider.instance.fetchFeatureConfigs()
     })
 
@@ -131,21 +124,16 @@ describe('FeatureConfigProvider', () => {
         for (const tuple of cases) {
             it(`should return ${tuple.expected} when variation name is ${tuple.variationName}`, async function () {
                 const clientSpy = await createSpyClient()
-                sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
-                    promise: () =>
-                        Promise.resolve({
-                            $response: {
-                                requestId: '',
-                            },
-                            featureEvaluations: [
-                                {
-                                    feature: 'ProjectContextV2',
-                                    variation: tuple.variationName,
-                                    value: { stringValue: 'foo' },
-                                },
-                            ],
-                        }),
-                } as Request<ListFeatureEvaluationsResponse, AWSError>)
+                sinon.stub(clientSpy, 'listFeatureEvaluations').resolves({
+                    $metadata: { requestId: '' },
+                    featureEvaluations: [
+                        {
+                            feature: 'ProjectContextV2',
+                            variation: tuple.variationName,
+                            value: { stringValue: 'foo' },
+                        },
+                    ],
+                })
                 await FeatureConfigProvider.instance.fetchFeatureConfigs()
 
                 assert.strictEqual(FeatureConfigProvider.instance.getProjectContextGroup(), tuple.expected)

@@ -6,16 +6,16 @@
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftDataClient } from '@aws-sdk/client-redshift-data'
 import { RedshiftSchemaNode } from '../../../../awsService/redshift/explorer/redshiftSchemaNode'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import { RedshiftTableNode } from '../../../../awsService/redshift/explorer/redshiftTableNode'
-import { ListTablesResponse } from 'aws-sdk/clients/redshiftdata'
+import { ListTablesResponse } from '@aws-sdk/client-redshift-data'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftSchemaNode', function () {
     const sandbox = sinon.createSandbox()
-    const mockRedshiftData: RedshiftData = <RedshiftData>{}
+    const mockRedshiftData: RedshiftDataClient = <RedshiftDataClient>{}
     const redshiftClient: DefaultRedshiftClient = new DefaultRedshiftClient(
         'us-east-1',
         async () => mockRedshiftData,
@@ -33,7 +33,7 @@ describe('RedshiftSchemaNode', function () {
     describe('getChildren', function () {
         beforeEach(function () {
             listTablesStub = sandbox.stub()
-            mockRedshiftData.listTables = listTablesStub
+            mockRedshiftData.send = listTablesStub
         })
 
         afterEach(function () {
@@ -41,10 +41,9 @@ describe('RedshiftSchemaNode', function () {
         })
 
         it('gets table nodes and filters out tables with pkey', async () => {
-            listTablesStub.returns({
-                promise: () =>
-                    Promise.resolve({ Tables: [{ name: 'test' }, { name: 'test_pkey' }] } as ListTablesResponse),
-            })
+            listTablesStub.callsFake(() =>
+                Promise.resolve({ Tables: [{ name: 'test' }, { name: 'test_pkey' }] } as ListTablesResponse)
+            )
             const node = new RedshiftSchemaNode('testSchema', redshiftClient, connectionParams)
             const childNodes = await node.getChildren()
             assert.strictEqual(childNodes.length, 1)
@@ -52,13 +51,12 @@ describe('RedshiftSchemaNode', function () {
         })
 
         it('gets table nodes & adds load more node if there are more nodes to be loaded', async () => {
-            listTablesStub.returns({
-                promise: () =>
-                    Promise.resolve({
-                        Tables: [{ name: 'test' }, { name: 'test_pkey' }],
-                        NextToken: 'next',
-                    } as ListTablesResponse),
-            })
+            listTablesStub.callsFake(() =>
+                Promise.resolve({
+                    Tables: [{ name: 'test' }, { name: 'test_pkey' }],
+                    NextToken: 'next',
+                } as ListTablesResponse)
+            )
             const node = new RedshiftSchemaNode('testSchema', redshiftClient, connectionParams)
             const childNodes = await node.getChildren()
             assert.strictEqual(childNodes.length, 2)
@@ -67,7 +65,7 @@ describe('RedshiftSchemaNode', function () {
         })
 
         it('shows error node when list table API errors out', async () => {
-            listTablesStub.returns({ promise: () => Promise.reject('failed') })
+            listTablesStub.callsFake(() => Promise.reject('failed'))
             const node = new RedshiftSchemaNode('testSchema', redshiftClient, connectionParams)
             const childNodes = await node.getChildren()
             assert.strictEqual(childNodes.length, 1)

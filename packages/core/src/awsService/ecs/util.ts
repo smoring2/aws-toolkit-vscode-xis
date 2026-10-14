@@ -13,9 +13,9 @@ import { DefaultIamClient, IamClient } from '../../shared/clients/iamClient'
 import { ToolkitError } from '../../shared/errors'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
-import { Session, TaskDefinition } from 'aws-sdk/clients/ecs'
+import { Session as EcsSession, TaskDefinition } from '@aws-sdk/client-ecs'
+import { SSMClient, TerminateSessionCommand } from '@aws-sdk/client-ssm'
 import { getLogger } from '../../shared/logger'
-import { SSM } from 'aws-sdk'
 import { fromExtensionManifest } from '../../shared/settings'
 import { ecsTaskPermissionsUrl } from '../../shared/constants'
 
@@ -76,7 +76,7 @@ export async function prepareCommand(
 ): Promise<{ path: string; args: string[]; dispose: () => void }> {
     const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9())
 
-    let session: Session
+    let session: EcsSession
     try {
         session = (await client.executeCommand({ ...task, command })).session!
     } catch (execErr) {
@@ -93,12 +93,10 @@ export async function prepareCommand(
 
     async function terminateSession() {
         const sessionId = session.sessionId!
-        const ssm = await globals.sdkClientBuilder.createAwsService(SSM, undefined, client.regionCode)
-        ssm.terminateSession({ SessionId: sessionId })
-            .promise()
-            .catch((err) => {
-                getLogger().warn(`ecs: failed to terminate session "${sessionId}": %s`, err)
-            })
+        const ssm = await globals.sdkClientBuilderV3.createAwsService(SSMClient, undefined, client.regionCode)
+        ssm.send(new TerminateSessionCommand({ SessionId: sessionId })).catch((err) => {
+            getLogger().warn(`ecs: failed to terminate session "${sessionId}": %s`, err)
+        })
     }
 
     return { path: ssmPlugin, args, dispose: () => void terminateSession() }

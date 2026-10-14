@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as http from 'http' // eslint-disable-line no-restricted-imports
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { AWSError, MetadataService } from 'aws-sdk'
 
 export interface IamInfo {
     Code: string
@@ -18,11 +18,13 @@ export interface InstanceIdentity {
     region: string
 }
 
+const metadataServiceHost = '169.254.169.254'
+const tokenPath = '/latest/api/token'
+const tokenTtlSeconds = '21600'
+
 export type Ec2MetadataClient = ClassToInterfaceType<DefaultEc2MetadataClient>
 export class DefaultEc2MetadataClient {
     private static readonly metadataServiceTimeout: number = 500
-
-    public constructor(private metadata: MetadataService = DefaultEc2MetadataClient.getMetadataService()) {}
 
     public getInstanceIdentity(): Promise<InstanceIdentity> {
         return this.invoke<InstanceIdentity>('/latest/dynamic/instance-identity/document')
@@ -32,52 +34,56 @@ export class DefaultEc2MetadataClient {
         return this.invoke<IamInfo>('/latest/meta-data/iam/info')
     }
 
-    public invoke<T>(path: string): Promise<T> {
-        return new Promise((resolve, reject) => {
-            // fetchMetadataToken is private for some reason, but has the exact token functionality
-            // that we want out of the metadata service.
-            // https://github.com/aws/aws-sdk-js/blob/3333f8b49283f5bbff823ab8a8469acedb7fe3d5/lib/metadata_service.js#L116-L136
-            ;(this.metadata as any).fetchMetadataToken((tokenErr: AWSError, token: string) => {
-                let options
-                if (tokenErr) {
-                    getLogger().warn(
-                        'Ec2MetadataClient failed to fetch token. If this is an EC2 environment, then Toolkit will fall back to IMDSv1: %s',
-                        tokenErr
-                    )
+    public async invoke<T>(path: string): Promise<T> {
+        let headers: http.OutgoingHttpHeaders = {}
 
-                    // Fall back to IMDSv1 for legacy instances.
-                    options = {}
-                } else {
-                    options = {
-                        // By attaching the token we force the use of IMDSv2.
-                        // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-metadata-v2-how-it-works.html
-                        headers: { 'x-aws-ec2-metadata-token': token },
-                    }
-                }
+        try {
+            const token = await this.fetchMetadataToken()
+            headers = {
+                // By attaching the token we force the use of IMDSv2.
+                // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-metadata-v2-how-it-works.html
+                'x-aws-ec2-metadata-token': token,
+            }
+        } catch (tokenErr) {
+            getLogger().warn(
+                'Ec2MetadataClient failed to fetch token. If this is an EC2 environment, then Toolkit will fall back to IMDSv1: %s',
+                tokenErr
+            )
+            // Fall back to IMDSv1 for legacy instances.
+        }
 
-                this.metadata.request(path, options, (err, response) => {
-                    if (err) {
-                        reject(err)
-                        return
-                    }
-                    try {
-                        const jsonResponse: T = JSON.parse(response)
-                        resolve(jsonResponse)
-                    } catch (e) {
-                        reject(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
+        const response = await this.request('GET', path, headers)
+
+        try {
+            return JSON.parse(response) as T
+        } catch (e) {
+            throw new Error(`Ec2MetadataClient: invalid response from "${path}": ${response}\nerror: ${e}`)
+        }
+    }
+
+    private fetchMetadataToken(): Promise<string> {
+        return this.request('PUT', tokenPath, { 'x-aws-ec2-metadata-token-ttl-seconds': tokenTtlSeconds })
+    }
+
+    private request(method: string, path: string, headers: http.OutgoingHttpHeaders): Promise<string> {
+        const timeout = DefaultEc2MetadataClient.metadataServiceTimeout
+
+        return new Promise<string>((resolve, reject) => {
+            const req = http.request({ host: metadataServiceHost, method, path, headers, timeout }, (res) => {
+                let data = ''
+                res.on('data', (chunk) => (data += chunk))
+                res.on('end', () => {
+                    if (res.statusCode !== undefined && (res.statusCode < 200 || res.statusCode >= 300)) {
+                        reject(new Error(`Ec2MetadataClient: "${path}" failed with status ${res.statusCode}`))
+                    } else {
+                        resolve(data)
                     }
                 })
             })
-        })
-    }
 
-    private static getMetadataService() {
-        return new MetadataService({
-            httpOptions: {
-                timeout: DefaultEc2MetadataClient.metadataServiceTimeout,
-                connectTimeout: DefaultEc2MetadataClient.metadataServiceTimeout,
-            } as any,
-            // workaround for known bug: https://github.com/aws/aws-sdk-js/issues/3029
+            req.on('timeout', () => req.destroy(new Error(`Ec2MetadataClient: "${path}" timed out`)))
+            req.on('error', reject)
+            req.end()
         })
     }
 }

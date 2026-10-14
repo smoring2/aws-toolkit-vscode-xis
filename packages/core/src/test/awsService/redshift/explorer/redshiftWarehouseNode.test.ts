@@ -5,7 +5,7 @@
 
 import sinon = require('sinon')
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
+import { ListDatabasesResponse } from '@aws-sdk/client-redshift-data'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import {
     RedshiftWarehouseNode,
@@ -17,7 +17,7 @@ import * as assert from 'assert'
 import { RedshiftDatabaseNode } from '../../../../awsService/redshift/explorer/redshiftDatabaseNode'
 import { AWSCommandTreeNode } from '../../../../shared/treeview/nodes/awsCommandTreeNode'
 import { RedshiftNodeConnectionWizard } from '../../../../awsService/redshift/wizards/connectionWizard'
-import RedshiftData = require('aws-sdk/clients/redshiftdata')
+import { RedshiftDataClient } from '@aws-sdk/client-redshift-data'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -51,7 +51,7 @@ describe('redshiftWarehouseNode', function () {
             RedshiftWarehouseType.PROVISIONED
         )
         const resourceNode = { arn: 'testARN', name: 'warehouseId' } as AWSResourceNode
-        const mockRedshiftData = <RedshiftData>{}
+        const mockRedshiftData = <RedshiftDataClient>{}
         const redshiftClient = new DefaultRedshiftClient(
             'us-east-1',
             async (r) => Promise.resolve(mockRedshiftData),
@@ -65,7 +65,7 @@ describe('redshiftWarehouseNode', function () {
 
         beforeEach(function () {
             listDatabasesStub = sandbox.stub()
-            mockRedshiftData.listDatabases = listDatabasesStub
+            mockRedshiftData.send = listDatabasesStub
         })
 
         afterEach(function () {
@@ -75,7 +75,7 @@ describe('redshiftWarehouseNode', function () {
         it('gets databases for a warehouse and adds a start button', async () => {
             connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
             warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
-            listDatabasesStub.returns({ promise: () => Promise.resolve(expectedResponse) })
+            listDatabasesStub.callsFake(() => Promise.resolve(expectedResponse))
 
             const childNodes = await warehouseNode.getChildren()
 
@@ -85,7 +85,7 @@ describe('redshiftWarehouseNode', function () {
         it('gets databases for a warehouse, adds a start button and a load more button if there are more results', async () => {
             connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
             warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
-            listDatabasesStub.returns({ promise: () => Promise.resolve(expectedResponseWithNextToken) })
+            listDatabasesStub.callsFake(() => Promise.resolve(expectedResponseWithNextToken))
 
             const childNodes = await warehouseNode.getChildren()
 
@@ -102,7 +102,7 @@ describe('redshiftWarehouseNode', function () {
         it('shows a node with retry if there is error fetching databases', async () => {
             connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
             warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
-            listDatabasesStub.returns({ promise: () => Promise.reject('Failed') })
+            listDatabasesStub.callsFake(() => Promise.reject('Failed'))
             const childNodes = await warehouseNode.getChildren()
             verifyRetryNode(childNodes)
         })

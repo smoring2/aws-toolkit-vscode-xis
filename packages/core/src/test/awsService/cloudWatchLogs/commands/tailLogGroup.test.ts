@@ -26,7 +26,7 @@ describe('TailLogGroup', function () {
     const testMessage = 'test-message'
     const testAwsAccountId = '1234'
     const testSource = 'test-source'
-    const testAwsCredentials = {} as any as AWS.Credentials
+    const testAwsCredentials = {} as any
 
     let sandbox: sinon.SinonSandbox
     let registry: LiveTailSessionRegistry

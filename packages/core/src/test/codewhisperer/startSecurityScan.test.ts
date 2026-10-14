@@ -14,7 +14,6 @@ import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsPro
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../testUtil'
-import { AWSError } from 'aws-sdk'
 import { getTestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
 import { cancel } from '../../shared/localizedText'
@@ -28,6 +27,7 @@ import {
 import * as model from '../../codewhisperer/models/model'
 import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
+import { AwsError } from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
 import { SecurityIssuesTree } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
@@ -334,7 +334,7 @@ describe('startSecurityScan', function () {
             time: new Date(),
             name: 'error name',
             message: scansLimitReachedErrorMessage,
-        } satisfies AWSError)
+        } satisfies AwsError)
         sinon.stub(errors, 'isAwsError').returns(true)
         const testWindow = getTestWindow()
         await startSecurityScan.startSecurityScan(
@@ -365,7 +365,7 @@ describe('startSecurityScan', function () {
             time: new Date(),
             name: 'error name',
             message: 'Maximum file scans count reached for this month',
-        } satisfies AWSError)
+        } satisfies AwsError)
         sinon.stub(errors, 'isAwsError').returns(true)
         assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), false)
         await startSecurityScan.startSecurityScan(

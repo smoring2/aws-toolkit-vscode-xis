@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SecretsManager } from 'aws-sdk'
-import globals from '../extensionGlobals'
 import {
+    CreateSecretCommand,
     CreateSecretRequest,
     CreateSecretResponse,
+    ListSecretsCommand,
     ListSecretsRequest,
     ListSecretsResponse,
-} from 'aws-sdk/clients/secretsmanager'
+    SecretsManagerClient as Client,
+} from '@aws-sdk/client-secrets-manager'
+import globals from '../extensionGlobals'
 import { productName } from '../constants'
 
 export class SecretsManagerClient {
@@ -18,7 +20,7 @@ export class SecretsManagerClient {
         public readonly regionCode: string,
         private readonly secretsManagerClientProvider: (
             regionCode: string
-        ) => Promise<SecretsManager> = createSecretsManagerClient
+        ) => Promise<Client> = createSecretsManagerClient
     ) {}
 
     /**
@@ -38,7 +40,7 @@ export class SecretsManagerClient {
             ],
             SortOrder: 'desc',
         }
-        return secretsManagerClient.listSecrets(request).promise()
+        return secretsManagerClient.send(new ListSecretsCommand(request))
     }
 
     public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretResponse> {
@@ -59,10 +61,10 @@ export class SecretsManagerClient {
             ],
             ForceOverwriteReplicaSecret: true,
         }
-        return secretsManagerClient.createSecret(request).promise()
+        return secretsManagerClient.send(new CreateSecretCommand(request))
     }
 }
 
-async function createSecretsManagerClient(regionCode: string): Promise<SecretsManager> {
-    return await globals.sdkClientBuilder.createAwsService(SecretsManager, { computeChecksums: true }, regionCode)
+async function createSecretsManagerClient(regionCode: string): Promise<Client> {
+    return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, regionCode)
 }

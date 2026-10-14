@@ -15,12 +15,12 @@ import {
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth } from '../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
-import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
+import { CodeCatalystCommands, DevEnvironmentSettings, UpdateDevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
-import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetDevEnvironmentRequest } from '@aws-sdk/client-codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { patchObject, registerAuthHook, skipTest, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
@@ -191,7 +191,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.strictEqual(actualDevEnv.org.name, spaceName)
             assert.strictEqual(actualDevEnv.alias, differentDevEnvSettings.alias)
             assert.strictEqual(actualDevEnv.instanceType, 'dev.standard1.medium')
-            assert.strictEqual(actualDevEnv.persistentStorage.sizeInGiB, 32)
+            assert.strictEqual(actualDevEnv.persistentStorage?.sizeInGiB, 32)
         })
 
         it.skip('creates a Dev Environment using an existing branch', async function () {
@@ -292,7 +292,10 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('updates the properties of an existing dev environment', async function () {
-            const newDevEnvSettings = { alias: createAlias(), instanceType: 'dev.standard1.medium' }
+            const newDevEnvSettings: UpdateDevEnvironmentSettings = {
+                alias: createAlias(),
+                instanceType: 'dev.standard1.medium',
+            }
 
             // Ensure current properties do not equal the updated properties
             assert.notStrictEqual(defaultDevEnv.alias, newDevEnvSettings.alias)

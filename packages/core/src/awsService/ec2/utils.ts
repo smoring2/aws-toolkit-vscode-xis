@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import { SafeEc2Instance } from '../../shared/clients/ec2Client'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'
-import { SSM } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 
 export function getIconCode(instance: SafeEc2Instance) {
@@ -33,7 +33,7 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
 export function getEc2SsmEnv(
     selection: Ec2Selection,
     ssmPath: string,
-    session: SSM.StartSessionResponse
+    session: StartSessionResponse
 ): NodeJS.ProcessEnv {
     return Object.assign(
         {

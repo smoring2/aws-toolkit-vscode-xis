@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ServiceSummary } from '@aws-sdk/client-apprunner'
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
 import { AppRunnerClient } from '../../../../shared/clients/apprunnerClient'
@@ -20,7 +20,7 @@ describe('AppRunnerNode', function () {
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], void>
 
-    const exampleSummaries: AppRunner.ServiceSummaryList = [
+    const exampleSummaries: ServiceSummary[] = [
         {
             ServiceName: 'test1',
             Status: 'RUNNING',

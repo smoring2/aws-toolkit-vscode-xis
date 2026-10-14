@@ -61,7 +61,7 @@ export async function listScanResults(
     const issues = await collection
         .flatten()
         .map((resp) => {
-            logger.verbose(`ListCodeScanFindingsRequest requestId: ${resp.$response.requestId}`)
+            logger.verbose(`ListCodeScanFindingsRequest requestId: ${resp.$metadata.requestId}`)
             if ('codeScanFindings' in resp) {
                 return resp.codeScanFindings
             }
@@ -204,7 +204,7 @@ export async function pollScanJobStatus(
             jobId: jobId,
         }
         const resp = await client.getCodeScan(req)
-        logger.verbose(`GetCodeScanRequest requestId: ${resp.$response.requestId}`)
+        logger.verbose(`GetCodeScanRequest requestId: ${resp.$metadata.requestId}`)
         if (resp.status !== 'Pending') {
             status = resp.status
             logger.verbose(`Scan job status: ${status}`)
@@ -252,9 +252,9 @@ export async function createScanJob(
         throw new CreateCodeScanError(err)
     })
     getLogger().info(
-        `Amazon Q Code Review requestId: ${resp.$response.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
+        `Amazon Q Code Review requestId: ${resp.$metadata.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
     )
-    TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
+    TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$metadata.requestId ?? '')
     return resp
 }
 
@@ -284,7 +284,7 @@ export async function getPresignedUrlAndUpload(
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })
-    logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$response.requestId}`)
+    logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$metadata.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
     await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, scope)

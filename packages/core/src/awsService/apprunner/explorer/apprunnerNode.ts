@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { CreateServiceRequest, ListServicesRequest, Service } from '@aws-sdk/client-apprunner'
 import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
@@ -10,13 +12,12 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
-import { AppRunner } from 'aws-sdk'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 const localize = nls.loadMessageBundle()
 
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
+    private readonly serviceNodes: Map<string, AppRunnerServiceNode> = new Map()
     private readonly pollingSet: PollingSet<string> = new PollingSet(20000, this.refresh.bind(this))
 
     public constructor(
@@ -43,7 +44,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
+    private async getServiceSummaries(request: ListServicesRequest = {}): Promise<Service[]> {
         const iterator = getPaginatedAwsCallIter({
             awsCall: async (request) => await this.client.listServices(request),
             nextTokenNames: {
@@ -53,13 +54,13 @@ export class AppRunnerNode extends AWSTreeNodeBase {
             request,
         })
 
-        const services: AppRunner.Service[] = []
+        const services: Service[] = []
 
         while (true) {
             const next = await iterator.next()
 
             // eslint-disable-next-line unicorn/no-array-for-each
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
+            next.value.ServiceSummaryList.forEach((summary: Service) => services.push(summary))
 
             if (next.done) {
                 break
@@ -75,16 +76,16 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
         await Promise.all(
             serviceSummaries.map(async (summary) => {
-                if (this.serviceNodes.has(summary.ServiceArn)) {
-                    this.serviceNodes.get(summary.ServiceArn)!.update(summary)
+                if (this.serviceNodes.has(summary.ServiceArn!)) {
+                    this.serviceNodes.get(summary.ServiceArn!)!.update(summary)
                     if (summary.Status !== 'OPERATION_IN_PROGRESS') {
-                        this.pollingSet.delete(summary.ServiceArn)
+                        this.pollingSet.delete(summary.ServiceArn!)
                         this.pollingSet.clearTimer()
                     }
                 } else {
-                    this.serviceNodes.set(summary.ServiceArn, new AppRunnerServiceNode(this, this.client, summary))
+                    this.serviceNodes.set(summary.ServiceArn!, new AppRunnerServiceNode(this, this.client, summary))
                 }
-                deletedNodeArns.delete(summary.ServiceArn)
+                deletedNodeArns.delete(summary.ServiceArn!)
             })
         )
 
@@ -107,7 +108,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.pollingSet.delete(id)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
+    public async createService(request: CreateServiceRequest): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }

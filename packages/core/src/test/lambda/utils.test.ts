@@ -4,6 +4,7 @@
  */
 
 import assert from 'assert'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { getLambdaDetails } from '../../lambda/utils'
 
 describe('lambda utils', async function () {
@@ -49,7 +50,7 @@ describe('lambda utils', async function () {
                 })
             )
             // runtime that isn't present, period
-            assert.throws(() => getLambdaDetails({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' }))
+            assert.throws(() => getLambdaDetails({ Runtime: 'COBOL-60' as Runtime, Handler: 'asdf.asdf' }))
         })
     })
 })

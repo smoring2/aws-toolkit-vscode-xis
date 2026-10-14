@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from '@aws-sdk/types'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { LoginManager } from '../../../auth/deprecated/loginManager'
@@ -23,7 +22,7 @@ describe('LoginManager', async function () {
         },
         getExplorerRegions: () => [],
     } as any as AwsContext
-    const sampleCredentials = {} as any as AWS.Credentials
+    const sampleCredentials = {} as any
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',

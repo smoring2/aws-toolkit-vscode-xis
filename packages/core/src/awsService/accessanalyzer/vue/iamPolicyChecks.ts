@@ -11,7 +11,8 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../../webviews/main'
 import { ExtContext } from '../../../shared/extensions'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
+import { AccessAnalyzerClient, ValidatePolicyCommand, ValidatePolicyFinding } from '@aws-sdk/client-accessanalyzer'
+import { fromIni } from '@aws-sdk/credential-provider-ini'
 import { ToolkitError } from '../../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { globals } from '../../../shared'
@@ -61,7 +62,7 @@ export class IamPolicyChecksWebview extends VueWebview {
 
     public constructor(
         private readonly data: IamPolicyChecksInitialData,
-        private client: AccessAnalyzer,
+        private client: AccessAnalyzerClient,
         private readonly region: string,
         public readonly onChangeInputPath = new vscode.EventEmitter<string>(),
         public readonly onChangeCheckNoNewAccessFilePath = new vscode.EventEmitter<string>(),
@@ -174,88 +175,69 @@ export class IamPolicyChecksWebview extends VueWebview {
         switch (documentType) {
             case 'JSON Policy Language': {
                 if (isJsonPolicyLanguage(document)) {
-                    telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run((span) => {
+                    await telemetry.accessanalyzer_iamPolicyChecksValidatePolicy.run(async (span) => {
                         span.record({
                             documentType,
                             inputPolicyType: policyType ? policyType : 'None',
                         })
-                        this.client.config.credentials = new SharedIniFileCredentials() // We need to detect changes in the user's credentials
-                        this.client.validatePolicy(
-                            {
-                                policyDocument: IamPolicyChecksWebview.editedDocument,
-                                policyType: policyType === 'Identity' ? 'IDENTITY_POLICY' : 'RESOURCE_POLICY',
-                            },
-                            (err, data) => {
-                                if (err) {
-                                    span.record({
-                                        findingsCount: 0,
-                                    })
-                                    if (err instanceof ExpiredTokenException) {
-                                        this.onValidatePolicyResponse.fire([
-                                            IamPolicyChecksConstants.InvalidAwsCredentials,
-                                            getResultCssColor('Error'),
-                                        ])
-                                    } else {
-                                        this.onValidatePolicyResponse.fire([err.message, getResultCssColor('Error')])
-                                    }
-                                } else {
-                                    if (data.findings.length > 0) {
-                                        span.record({
-                                            findingsCount: data.findings.length,
-                                        })
-                                        // eslint-disable-next-line unicorn/no-array-for-each
-                                        data.findings.forEach((finding: AccessAnalyzer.ValidatePolicyFinding) => {
-                                            const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
-                                            if ((finding.findingType as ValidatePolicyFindingType) === 'ERROR') {
-                                                diagnostics.push(
-                                                    new vscode.Diagnostic(
-                                                        new vscode.Range(
-                                                            finding.locations[0].span.start.line,
-                                                            finding.locations[0].span.start.offset,
-                                                            finding.locations[0].span.end.line,
-                                                            finding.locations[0].span.end.offset
-                                                        ),
-                                                        message,
-                                                        vscode.DiagnosticSeverity.Error
-                                                    )
-                                                )
-                                                validatePolicyDiagnosticCollection.set(
-                                                    IamPolicyChecksWebview.editedDocumentUri,
-                                                    diagnostics
-                                                )
-                                            } else {
-                                                diagnostics.push(
-                                                    new vscode.Diagnostic(
-                                                        new vscode.Range(
-                                                            finding.locations[0].span.start.line,
-                                                            finding.locations[0].span.start.offset,
-                                                            finding.locations[0].span.end.line,
-                                                            finding.locations[0].span.end.offset
-                                                        ),
-                                                        message,
-                                                        vscode.DiagnosticSeverity.Warning
-                                                    )
-                                                )
-                                                validatePolicyDiagnosticCollection.set(
-                                                    IamPolicyChecksWebview.editedDocumentUri,
-                                                    diagnostics
-                                                )
-                                            }
-                                        })
-                                        this.onValidatePolicyResponse.fire([
-                                            IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
-                                            getResultCssColor('Warning'),
-                                        ])
-                                        void vscode.commands.executeCommand('workbench.actions.view.problems')
-                                    } else {
-                                        this.onValidatePolicyResponse.fire([
-                                            IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
-                                            getResultCssColor('Success'),
-                                        ])
-                                    }
-                                }
+                        // We need to detect changes in the user's credentials
+                        this.client.config.credentials = fromIni()
+                        try {
+                            const data = await this.client.send(
+                                new ValidatePolicyCommand({
+                                    policyDocument: IamPolicyChecksWebview.editedDocument,
+                                    policyType: policyType === 'Identity' ? 'IDENTITY_POLICY' : 'RESOURCE_POLICY',
+                                })
+                            )
+                            const findings = data.findings ?? []
+                            if (findings.length > 0) {
+                                span.record({
+                                    findingsCount: findings.length,
+                                })
+                                // eslint-disable-next-line unicorn/no-array-for-each
+                                findings.forEach((finding: ValidatePolicyFinding) => {
+                                    const message = `${finding.findingType}: ${finding.issueCode} - ${finding.findingDetails} Learn more: ${finding.learnMoreLink}`
+                                    const location = finding.locations![0]
+                                    const range = new vscode.Range(
+                                        location.span!.start!.line!,
+                                        location.span!.start!.offset!,
+                                        location.span!.end!.line!,
+                                        location.span!.end!.offset!
+                                    )
+                                    const severity =
+                                        (finding.findingType as ValidatePolicyFindingType) === 'ERROR'
+                                            ? vscode.DiagnosticSeverity.Error
+                                            : vscode.DiagnosticSeverity.Warning
+                                    diagnostics.push(new vscode.Diagnostic(range, message, severity))
+                                    validatePolicyDiagnosticCollection.set(
+                                        IamPolicyChecksWebview.editedDocumentUri,
+                                        diagnostics
+                                    )
+                                })
+                                this.onValidatePolicyResponse.fire([
+                                    IamPolicyChecksConstants.ValidatePolicySuccessWithFindings,
+                                    getResultCssColor('Warning'),
+                                ])
+                                void vscode.commands.executeCommand('workbench.actions.view.problems')
+                            } else {
+                                this.onValidatePolicyResponse.fire([
+                                    IamPolicyChecksConstants.ValidatePolicySuccessNoFindings,
+                                    getResultCssColor('Success'),
+                                ])
                             }
-                        )
+                        } catch (err) {
+                            span.record({
+                                findingsCount: 0,
+                            })
+                            if (err instanceof ExpiredTokenException) {
+                                this.onValidatePolicyResponse.fire([
+                                    IamPolicyChecksConstants.InvalidAwsCredentials,
+                                    getResultCssColor('Error'),
+                                ])
+                            } else {
+                                this.onValidatePolicyResponse.fire([(err as Error).message, getResultCssColor('Error')])
+                            }
+                        }
                     })
                     return
                 } else {
@@ -757,7 +739,7 @@ const Panel = VueWebview.compilePanel(IamPolicyChecksWebview)
 export async function renderIamPolicyChecks(context: ExtContext): Promise<VueWebviewPanel | undefined> {
     const logger: Logger = getLogger()
     try {
-        const client = new AccessAnalyzer({ region: context.regionProvider.defaultRegionId })
+        const client = new AccessAnalyzerClient({ region: context.regionProvider.defaultRegionId })
         // Read from settings to auto-fill some inputs
         const checkNoNewAccessFilePath: string = vscode.workspace
             .getConfiguration()
@@ -820,9 +802,7 @@ export async function _readCustomChecksFile(input: string): Promise<string> {
             const [region, bucket, key] = parseS3Uri(input)
             const s3Client = new DefaultS3Client(region)
             const resp = await s3Client.getObject({ bucketName: bucket, key })
-            // Lint warning: this may evaluate to '[object Object]'. @typescript-eslint/no-base-to-string
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            return resp.objectBody.toString()
+            return await resp.objectBody.transformToString()
         } catch (e: any) {
             if (e.message.includes('Invalid S3 URI')) {
                 throw new PolicyChecksError('Invalid file path or S3 URI', 'FileReadError')

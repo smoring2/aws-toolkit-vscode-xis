@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 
-import { AWSError } from 'aws-sdk'
+import { AwsError } from '../../shared/errors'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
@@ -147,14 +147,14 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
     })
 
     it('returns "unknown" if cloud9 and the MetadataService request fails', async function () {
-        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AwsError)
 
         await initializeComputeRegion(metadataService, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
     it('returns "unknown" if sagemaker and the MetadataService request fails', async function () {
-        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AwsError)
 
         await initializeComputeRegion(metadataService, false, true)
         assert.strictEqual(getComputeRegion(), 'unknown')

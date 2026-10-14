@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DescribeStateMachineOutput } from '@aws-sdk/client-sfn'
 import * as nls from 'vscode-nls'
 import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -29,8 +29,8 @@ export async function downloadStateMachineDefinition(params: {
     const stateMachineName = params.stateMachineNode.details.name
     try {
         const client: StepFunctionsClient = new DefaultStepFunctionsClient(params.stateMachineNode.regionCode)
-        const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(
-            params.stateMachineNode.details.stateMachineArn
+        const stateMachineDetails: DescribeStateMachineOutput = await client.getStateMachineDetails(
+            params.stateMachineNode.details.stateMachineArn!
         )
 
         if (params.isPreviewAndRender) {
@@ -50,7 +50,7 @@ export async function downloadStateMachineDefinition(params: {
 
             if (fileInfo) {
                 const filePath = fileInfo.fsPath
-                await fs.writeFile(filePath, stateMachineDetails.definition, 'utf8')
+                await fs.writeFile(filePath, stateMachineDetails.definition ?? '', 'utf8')
                 const openPath = vscode.Uri.file(filePath)
                 const doc = await vscode.workspace.openTextDocument(openPath)
                 await vscode.window.showTextDocument(doc)

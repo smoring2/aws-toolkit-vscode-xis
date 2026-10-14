@@ -32,10 +32,11 @@ interface MockWizardFormElement<TProp> {
     assertShowCount(count: number): void
 }
 
+/** Mirrors the `Form` type of {@link WizardForm}, which strips `undefined` from each property. */
 type MockForm<T, TState = T> = {
-    [Property in keyof T]-?: T[Property] extends ExpandWithObject<T[Property]>
-        ? MockForm<Required<T[Property]>, TState> & MockWizardFormElement<T[Property]>
-        : MockWizardFormElement<T[Property]>
+    [Property in keyof T]-?: NonNullable<T[Property]> extends ExpandWithObject<NonNullable<T[Property]>>
+        ? MockForm<Required<NonNullable<T[Property]>>, TState> & MockWizardFormElement<NonNullable<T[Property]>>
+        : MockWizardFormElement<NonNullable<T[Property]>>
 }
 
 type FormTesterMethodKey = keyof MockWizardFormElement<any>

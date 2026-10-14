@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DocumentIdentifier } from '@aws-sdk/client-ssm'
 import assert from 'assert'
-import { SSM } from 'aws-sdk'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
 import { stub } from '../../utilities/stubber'
 
 describe('DocumentItemNode', async function () {
     let testNode: DocumentItemNode
-    const testDoc: SSM.DocumentIdentifier = {
+    const testDoc: DocumentIdentifier = {
         Name: 'testDoc',
         Owner: 'Amazon',
     }

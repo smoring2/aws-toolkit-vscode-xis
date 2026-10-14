@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { AWSError } from 'aws-sdk'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
@@ -492,7 +491,7 @@ export function resolveErrorMessageToDisplay(error: unknown, defaultMessage: str
 }
 
 /**
- * Patterns that match the value of {@link AWSError.code}
+ * Patterns that match the value of {@link AwsError.code}
  */
 const _preferredErrors: RegExp[] = [
     /^ConflictException$/,
@@ -506,18 +505,18 @@ const _preferredErrors: RegExp[] = [
 ]
 
 /**
- * Searches the `cause` chain (if any) for the most useful/relevant {@link AWSError} to surface to
+ * Searches the `cause` chain (if any) for the most useful/relevant {@link AwsError} to surface to
  * the user, preferring "deeper" errors (lower-level, closer to the root cause) when all else is equal.
  *
  * These conditions determine precedence (in order):
- * - is AWSError
+ * - is AwsError
  * - has `error_description` field
  * - has `code` matching `preferredErrors`
  * - is filesystem error
  * - cause chain depth (the deepest error wins)
  *
  * @param error Error whose `cause` chain will be searched.
- * @param preferredErrors Error `code` field must match one of these, else it is discarded. Pass `[/./]` to match any AWSError.
+ * @param preferredErrors Error `code` field must match one of these, else it is discarded. Pass `[/./]` to match any AwsError.
  *
  * @returns Best match, or `error` if a better match is not found.
  */
@@ -544,7 +543,7 @@ export function findBestErrorInChain(error: Error, preferredErrors = _preferredE
 
         if (isAwsError(err) || (prefer && !isAwsError(bestErr))) {
             if (isAwsError(err) && !isAwsError(bestErr)) {
-                bestErr = err // Prefer AWSError.
+                bestErr = err // Prefer AwsError.
                 continue
             }
 
@@ -590,13 +589,28 @@ function hasName<T>(error: T): error is T & { name: string } {
     return typeof (error as { name?: unknown })?.name === 'string'
 }
 
+/**
+ * An error thrown by an AWS client.
+ *
+ * Note: AWS SDK v3 service exceptions expose the error code as `name`, while the AWS SDK v2
+ * exposed it as `code`. Toolkit clients normalize this to `code`.
+ */
+export type AwsError = Error & {
+    readonly code: string
+    readonly time?: Date
+    readonly requestId?: string
+    readonly statusCode?: number
+    readonly extendedRequestId?: string
+    readonly $metadata?: { requestId?: string; httpStatusCode?: number }
+}
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export function isAwsError(error: unknown): error is AWSError & { error_description?: string } {
+export function isAwsError(error: unknown): error is AwsError & { error_description?: string } {
     if (error === undefined) {
         return false
     }
 
-    return error instanceof Error && hasCode(error) && hasTime(error)
+    return error instanceof Error && hasCode(error) && (hasTime(error) || hasMetadata(error))
 }
 
 export function hasCode<T>(error: T): error is T & { code: string } {
@@ -636,7 +650,7 @@ export function getRequestId(err: unknown): string | undefined {
     }
 
     if (isAwsError(err)) {
-        return err.requestId
+        return err.requestId ?? err.$metadata?.requestId
     }
 }
 

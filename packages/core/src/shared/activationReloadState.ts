@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from './lambdaRuntime'
 import globals from './extensionGlobals'
 
 export interface SamInitState {

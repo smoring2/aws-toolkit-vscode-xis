@@ -7,7 +7,8 @@ import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
 import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { S3 } from 'aws-sdk'
+import { Bucket as S3Bucket } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import { getLogger } from '../../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { readablePath } from '../util'
@@ -38,7 +39,7 @@ interface UploadRequest {
     fileLocation: vscode.Uri
     fileSizeBytes: number
     s3Client: S3Client
-    ongoingUpload?: S3.ManagedUpload
+    ongoingUpload?: Upload
 }
 
 /**
@@ -281,7 +282,7 @@ async function uploadBatchOfFiles(
 
             token.onCancellationRequested((e) => {
                 if (uploadRequests[requestIdx].ongoingUpload) {
-                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                    void uploadRequests[requestIdx].ongoingUpload?.abort()
                 }
                 return failedRequests
             })
@@ -377,18 +378,18 @@ async function uploadWithProgress(
 
     const cancelled = new Promise<void>((_, reject) => {
         token.onCancellationRequested((e) => {
-            currentStream.abort()
+            void currentStream.abort()
             reject(new CancellationError('user'))
         })
     })
 
-    await Promise.race([currentStream.promise(), cancelled])
+    await Promise.race([currentStream.done(), cancelled])
 
     return (request.ongoingUpload = undefined)
 }
 
 export interface BucketQuickPickItem extends vscode.QuickPickItem {
-    bucket: S3.Bucket | undefined
+    bucket: S3Bucket | undefined
     folder?: Folder | undefined
 }
 
@@ -411,7 +412,7 @@ export async function promptUserForBucket(
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
 ): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
-    let allBuckets: S3.Bucket[]
+    let allBuckets: S3Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
@@ -424,7 +425,7 @@ export async function promptUserForBucket(
 
     const s3Buckets = allBuckets.filter((bucket) => {
         return bucket && bucket.Name
-    }) as S3.Bucket[]
+    }) as S3Bucket[]
 
     const createNewBucket: BucketQuickPickItem = {
         label: localize('AWS.command.s3.createBucket', 'Create new bucket'),

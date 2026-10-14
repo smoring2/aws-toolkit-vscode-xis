@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ManagedUpload } from 'aws-sdk/clients/s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../../awsService/s3/fileViewerManager'
 import { DefaultBucket, DefaultS3Client, File, toFile } from '../../../../shared/clients/s3Client'
@@ -62,14 +62,14 @@ function createS3() {
         assertHasProps(newFile, 'Key', 'ETag')
         files.set(newFile.key, newFile)
 
-        const upload = stub(ManagedUpload)
-        upload.promise.resolves({
+        const upload = stub(Upload)
+        upload.done.resolves({
             ...newFile,
             Bucket: bucket.name,
             Location: newFile.key,
-        })
+        } as any)
 
-        return upload
+        return upload as unknown as Upload
     })
 
     function getFile(key: string) {

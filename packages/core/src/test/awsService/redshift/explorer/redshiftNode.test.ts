@@ -6,26 +6,21 @@
 import sinon = require('sinon')
 import { RedshiftNode } from '../../../../awsService/redshift/explorer/redshiftNode'
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { AWSError, Redshift, RedshiftServerless, Request } from 'aws-sdk'
+import { RedshiftClient } from '@aws-sdk/client-redshift'
+import { RedshiftServerlessClient } from '@aws-sdk/client-redshift-serverless'
 import assert = require('assert')
 import { RedshiftWarehouseNode } from '../../../../awsService/redshift/explorer/redshiftWarehouseNode'
-import { ClusterList, ClustersMessage } from 'aws-sdk/clients/redshift'
-import { ListWorkgroupsResponse, WorkgroupList } from 'aws-sdk/clients/redshiftserverless'
+import { Cluster, ClustersMessage } from '@aws-sdk/client-redshift'
+import { ListWorkgroupsResponse, Workgroup } from '@aws-sdk/client-redshift-serverless'
 import { RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
-
-function success<T>(output?: T): Request<T, AWSError> {
-    return {
-        promise: () => Promise.resolve(output),
-    } as Request<any, AWSError>
-}
 
 function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage {
     const response = {
         Clusters: [
             { ClusterNamespaceArn: 'testArn', ClusterIdentifier: 'testId', ClusterAvailabilityStatus: 'available' },
-        ] as ClusterList,
+        ] as Cluster[],
     } as ClustersMessage
     if (withNextToken) {
         response.Marker = 'next'
@@ -35,7 +30,9 @@ function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage
 
 function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsResponse {
     const response = {
-        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' }] as WorkgroupList,
+        workgroups: [
+            { workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' },
+        ] as unknown as Workgroup[],
     } as ListWorkgroupsResponse
     if (withNextToken) {
         response.nextToken = 'next'
@@ -70,8 +67,8 @@ describe('redshiftNode', function () {
     describe('getChildren', function () {
         let node: RedshiftNode
         let redshiftClient: DefaultRedshiftClient
-        let mockRedshift: Redshift
-        let mockRedshiftServerless: RedshiftServerless
+        let mockRedshift: RedshiftClient
+        let mockRedshiftServerless: RedshiftServerlessClient
         const sandbox: sinon.SinonSandbox = sinon.createSandbox()
         const describeClustersStub = sandbox.stub()
         const listWorkgroupsStub = sandbox.stub()
@@ -90,16 +87,16 @@ describe('redshiftNode', function () {
         }
 
         beforeEach(function () {
-            mockRedshift = <Redshift>{}
-            mockRedshiftServerless = <RedshiftServerless>{}
+            mockRedshift = <RedshiftClient>{}
+            mockRedshiftServerless = <RedshiftServerlessClient>{}
             redshiftClient = new DefaultRedshiftClient(
                 'us-east-1',
                 undefined,
                 async (r) => Promise.resolve(mockRedshift),
                 async (r) => Promise.resolve(mockRedshiftServerless)
             )
-            mockRedshift.describeClusters = describeClustersStub
-            mockRedshiftServerless.listWorkgroups = listWorkgroupsStub
+            mockRedshift.send = describeClustersStub
+            mockRedshiftServerless.send = listWorkgroupsStub
             node = new RedshiftNode(redshiftClient)
         })
 
@@ -108,24 +105,24 @@ describe('redshiftNode', function () {
         })
 
         it('gets both provisioned and serverless warehouses when no results have been loaded', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
+            describeClustersStub.resolves(getExpectedProvisionedResponse(false))
+            listWorkgroupsStub.resolves(getExpectedServerlessResponse(false))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 0)
             verifyStubCallCounts(1, 1)
         })
 
         it('gets both provisioned and serverless warehouses if results have been loaded but there are more results', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
+            describeClustersStub.resolves(getExpectedProvisionedResponse(true))
+            listWorkgroupsStub.resolves(getExpectedServerlessResponse(true))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
             verifyStubCallCounts(1, 1)
         })
 
         it('gets only provisioned warehouses if results have been loaded and there are only more provisioned warehouses', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
+            describeClustersStub.resolves(getExpectedProvisionedResponse(true))
+            listWorkgroupsStub.resolves(getExpectedServerlessResponse(false))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()
@@ -135,8 +132,8 @@ describe('redshiftNode', function () {
         })
 
         it('gets only serverless warehouses if results have been loaded and there are only more serverless warehouses', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
+            describeClustersStub.resolves(getExpectedProvisionedResponse(false))
+            listWorkgroupsStub.resolves(getExpectedServerlessResponse(true))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()

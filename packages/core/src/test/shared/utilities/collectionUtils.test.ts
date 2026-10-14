@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DescribeLogStreamsRequest, DescribeLogStreamsResponse, LogStream } from '@aws-sdk/client-cloudwatch-logs'
 import assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
@@ -366,11 +366,8 @@ describe('CollectionUtils', async function () {
 
     describe('getPaginatedAwsCallIter', async function () {
         it('iterates as long as results are present', async function () {
-            const fakeCall = sandbox.stub<
-                [CloudWatchLogs.DescribeLogStreamsRequest],
-                CloudWatchLogs.DescribeLogStreamsResponse
-            >()
-            const responses: CloudWatchLogs.LogStreams[] = [
+            const fakeCall = sandbox.stub<[DescribeLogStreamsRequest], DescribeLogStreamsResponse>()
+            const responses: LogStream[][] = [
                 [{ logStreamName: 'stream1' }, { logStreamName: 'stream2' }, { logStreamName: 'stream3' }],
                 [{ logStreamName: 'stream4' }, { logStreamName: 'stream5' }, { logStreamName: 'stream6' }],
                 [{ logStreamName: 'stream7' }, { logStreamName: 'stream8' }, { logStreamName: 'stream9' }],
@@ -392,10 +389,7 @@ describe('CollectionUtils', async function () {
                 })
                 .onCall(3)
                 .returns({})
-            const params: getPaginatedAwsCallIterParams<
-                CloudWatchLogs.DescribeLogStreamsRequest,
-                CloudWatchLogs.DescribeLogStreamsResponse
-            > = {
+            const params: getPaginatedAwsCallIterParams<DescribeLogStreamsRequest, DescribeLogStreamsResponse> = {
                 awsCall: async (req) => fakeCall(req),
                 nextTokenNames: {
                     request: 'nextToken',
@@ -405,7 +399,7 @@ describe('CollectionUtils', async function () {
                     logGroupName: 'imJustHereSoIWontGetFined',
                 },
             }
-            const iter: AsyncIterator<CloudWatchLogs.DescribeLogStreamsResponse> = getPaginatedAwsCallIter(params)
+            const iter: AsyncIterator<DescribeLogStreamsResponse> = getPaginatedAwsCallIter(params)
             const firstResult = await iter.next()
             const secondResult = await iter.next()
             const thirdResult = await iter.next()

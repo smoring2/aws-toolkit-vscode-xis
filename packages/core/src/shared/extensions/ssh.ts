@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
@@ -12,7 +13,6 @@ import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
-import { SSM } from 'aws-sdk'
 import { ErrorInformation, ToolkitError } from '../errors'
 
 const localize = nls.loadMessageBundle()
@@ -135,7 +135,7 @@ export async function testSshConnection(
     hostname: string,
     sshPath: string,
     user: string,
-    session: SSM.StartSessionResponse
+    session: StartSessionResponse
 ): Promise<ChildProcessResult | never> {
     try {
         const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }

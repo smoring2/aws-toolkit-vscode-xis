@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ResourceDescription } from '@aws-sdk/client-cloudcontrol'
 import * as vscode from 'vscode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
@@ -15,7 +16,6 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ResourcesNode } from './resourcesNode'
 import { ResourceNode } from './resourceNode'
 import { Result } from '../../../shared/telemetry/telemetry'
-import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -123,15 +123,12 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
             })
 
             newResources = response.ResourceDescriptions
-                ? response.ResourceDescriptions.reduce(
-                      (accumulator: ResourceNode[], current: CloudControl.ResourceDescription) => {
-                          if (current.Identifier) {
-                              accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
-                          }
-                          return accumulator
-                      },
-                      []
-                  )
+                ? response.ResourceDescriptions.reduce((accumulator: ResourceNode[], current: ResourceDescription) => {
+                      if (current.Identifier) {
+                          accumulator.push(new ResourceNode(this, current.Identifier, this.childContextValue))
+                      }
+                      return accumulator
+                  }, [])
                 : []
             nextToken = response.NextToken
         }

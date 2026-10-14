@@ -3,7 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudControl } from 'aws-sdk'
+import {
+    CloudControlClient as Client,
+    CreateResourceCommand,
+    CreateResourceInput,
+    CreateResourceOutput,
+    DeleteResourceCommand,
+    DeleteResourceInput,
+    GetResourceCommand,
+    GetResourceInput,
+    GetResourceOutput,
+    GetResourceRequestStatusCommand,
+    ListResourcesCommand,
+    ListResourcesInput,
+    ListResourcesOutput,
+    ProgressEvent,
+    UpdateResourceCommand,
+    UpdateResourceInput,
+} from '@aws-sdk/client-cloudcontrol'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { localize } from '../utilities/vsCodeUtils'
@@ -12,46 +29,46 @@ export type CloudControlClient = ClassToInterfaceType<DefaultCloudControlClient>
 export class DefaultCloudControlClient implements CloudControlClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async createResource(request: CloudControl.CreateResourceInput): Promise<CloudControl.CreateResourceOutput> {
+    public async createResource(request: CreateResourceInput): Promise<CreateResourceOutput> {
         const client = await this.createSdkClient()
 
-        const createResponse = await client.createResource(request).promise()
+        const createResponse = await client.send(new CreateResourceCommand(request))
 
         await this.pollForCompletion(client, createResponse.ProgressEvent!)
         return createResponse
     }
 
-    public async deleteResource(request: CloudControl.DeleteResourceInput): Promise<void> {
+    public async deleteResource(request: DeleteResourceInput): Promise<void> {
         const client = await this.createSdkClient()
 
-        const deleteResponse = await client.deleteResource(request).promise()
+        const deleteResponse = await client.send(new DeleteResourceCommand(request))
 
         await this.pollForCompletion(client, deleteResponse.ProgressEvent!)
     }
 
-    public async listResources(request: CloudControl.ListResourcesInput): Promise<CloudControl.ListResourcesOutput> {
+    public async listResources(request: ListResourcesInput): Promise<ListResourcesOutput> {
         const client = await this.createSdkClient()
 
-        return await client.listResources(request).promise()
+        return await client.send(new ListResourcesCommand(request))
     }
 
-    public async getResource(request: CloudControl.GetResourceInput): Promise<CloudControl.GetResourceOutput> {
+    public async getResource(request: GetResourceInput): Promise<GetResourceOutput> {
         const client = await this.createSdkClient()
 
-        return await client.getResource(request).promise()
+        return await client.send(new GetResourceCommand(request))
     }
 
-    public async updateResource(request: CloudControl.UpdateResourceInput): Promise<void> {
+    public async updateResource(request: UpdateResourceInput): Promise<void> {
         const client = await this.createSdkClient()
 
-        const updateResponse = await client.updateResource(request).promise()
+        const updateResponse = await client.send(new UpdateResourceCommand(request))
 
         await this.pollForCompletion(client, updateResponse.ProgressEvent!)
     }
 
     private async pollForCompletion(
-        client: CloudControl,
-        progressEvent: CloudControl.ProgressEvent,
+        client: Client,
+        progressEvent: ProgressEvent,
         baseDelay: number = 500,
         maxRetries: number = 10
     ): Promise<void> {
@@ -94,11 +111,11 @@ export class DefaultCloudControlClient implements CloudControlClient {
 
             if (i + 1 < maxRetries) {
                 await new Promise<void>((resolve) => globals.clock.setTimeout(resolve, baseDelay * 2 ** i))
-                const resourceRequestStatus = await client
-                    .getResourceRequestStatus({
+                const resourceRequestStatus = await client.send(
+                    new GetResourceRequestStatusCommand({
                         RequestToken: progressEvent.RequestToken!,
                     })
-                    .promise()
+                )
                 progressEvent = resourceRequestStatus.ProgressEvent!
             }
         }
@@ -111,7 +128,7 @@ export class DefaultCloudControlClient implements CloudControlClient {
         )
     }
 
-    private async createSdkClient(): Promise<CloudControl> {
-        return await globals.sdkClientBuilder.createAwsService(CloudControl, undefined, this.regionCode)
+    private async createSdkClient(): Promise<Client> {
+        return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, this.regionCode)
     }
 }

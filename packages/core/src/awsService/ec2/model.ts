@@ -2,9 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
-import { Session } from 'aws-sdk/clients/ssm'
-import { EC2, IAM, SSM } from 'aws-sdk'
+import { Session } from '@aws-sdk/client-ssm'
+import { Role } from '@aws-sdk/client-iam'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -41,7 +43,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
-    ssmSession: SSM.StartSessionResponse
+    ssmSession: StartSessionResponse
 }
 
 export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
@@ -83,7 +85,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async addActiveSession(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+    public async addActiveSession(sessionId: string, instanceId: string): Promise<void> {
         await this.sessionManager.addSession(instanceId, sessionId)
     }
 
@@ -95,7 +97,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return this.sessionManager.isConnectedTo(instanceId)
     }
 
-    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
+    public async getAttachedIamRole(instanceId: string): Promise<Role | undefined> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
@@ -139,7 +141,7 @@ export class Ec2Connecter implements vscode.Disposable {
             })
         }
 
-        const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
+        const hasPermission = await this.hasProperPermissions(IamRole!.Arn!)
 
         if (!hasPermission) {
             const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)
@@ -232,7 +234,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return remoteEnv
     }
 
-    private async startSSMSession(instanceId: string): Promise<SSM.StartSessionResponse> {
+    private async startSSMSession(instanceId: string): Promise<StartSessionResponse> {
         const ssmSession = await this.ssmClient.startSession(instanceId, 'AWS-StartSSHSession')
         await this.addActiveSession(instanceId, ssmSession.SessionId!)
         return ssmSession

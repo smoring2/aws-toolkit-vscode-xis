@@ -10,7 +10,7 @@ import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { AWSError } from 'aws-sdk'
+import { AwsError } from '../../shared/errors'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
@@ -250,9 +250,9 @@ export class RecommendationHandler {
                 recommendations = (resp && resp.completions) || []
             }
             invocationResult = 'Succeeded'
-            requestId = resp?.$response && resp?.$response?.requestId
+            requestId = resp?.$metadata?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
-            sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
+            sessionId = resp?.$metadata?.sessionId
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
                 session.setTimeToFirstRecommendation(performance.now())
@@ -553,7 +553,7 @@ export class RecommendationHandler {
         return true
     }
 
-    async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {
+    async onThrottlingException(awsError: AwsError, triggerType: CodewhispererTriggerType) {
         if (
             awsError.code === 'ThrottlingException' &&
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)

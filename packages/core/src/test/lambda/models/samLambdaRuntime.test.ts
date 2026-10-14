@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '../../../shared/lambdaRuntime'
 import {
     compareSamLambdaRuntime,
     getDependencyManager,

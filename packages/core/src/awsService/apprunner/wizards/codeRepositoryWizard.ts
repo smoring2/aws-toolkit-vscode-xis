@@ -3,7 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
+import {
+    CodeConfigurationValues,
+    CodeRepository,
+    ConfigurationSource,
+    Runtime,
+    SourceConfiguration,
+} from '@aws-sdk/client-apprunner'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { Remote } from '../../../../types/git.d'
@@ -81,10 +87,10 @@ function createBranchPrompter(
     })
 }
 
-function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
+function createRuntimePrompter(): QuickPickPrompter<Runtime> {
     const items = [
-        { label: 'python3', data: 'PYTHON_3' },
-        { label: 'nodejs12', data: 'NODEJS_16' },
+        { label: 'python3', data: 'PYTHON_3' as Runtime },
+        { label: 'nodejs12', data: 'NODEJS_16' as Runtime },
     ]
 
     return createQuickPick(items, {
@@ -93,7 +99,7 @@ function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
     })
 }
 
-function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
+function createBuildCommandPrompter(runtime: Runtime): InputBoxPrompter {
     const buildCommandMap = {
         python: 'pip install -r requirements.txt',
         node: 'npm install',
@@ -108,7 +114,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
     })
 }
 
-function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
+function createStartCommandPrompter(runtime: Runtime): InputBoxPrompter {
     const startCommandMap = {
         python: 'python runapp.py',
         node: 'node app.js',
@@ -158,10 +164,12 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     const getItems = async () => {
         const resp = await client.listConnections()
 
-        return resp.ConnectionSummaryList.filter((conn) => conn.Status === 'AVAILABLE').map((conn) => ({
-            label: conn.ConnectionName!,
-            data: conn,
-        }))
+        return (resp.ConnectionSummaryList ?? [])
+            .filter((conn) => conn.Status === 'AVAILABLE')
+            .map((conn) => ({
+                label: conn.ConnectionName!,
+                data: conn,
+            }))
     }
 
     const refreshButton = createRefreshButton()
@@ -177,7 +185,7 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     return prompter
 }
 
-function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource> {
+function createSourcePrompter(): QuickPickPrompter<ConfigurationSource> {
     const configDetail = localize(
         'AWS.apprunner.createService.configSource.detail',
         'App Runner will read "apprunner.yaml" in the root of your repository for configuration details'
@@ -187,8 +195,8 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
 
     return createQuickPick(
         [
-            { label: apiLabel, data: 'API' },
-            { label: repoLabel, data: 'REPOSITORY', detail: configDetail },
+            { label: apiLabel, data: 'API' as ConfigurationSource },
+            { label: repoLabel, data: 'REPOSITORY' as ConfigurationSource, detail: configDetail },
         ],
         {
             title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
@@ -197,8 +205,8 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
     )
 }
 
-function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.CodeRepository> {
-    const subform = new WizardForm<AppRunner.CodeRepository>()
+function createCodeRepositorySubForm(git: GitExtension): WizardForm<CodeRepository> {
+    const subform = new WizardForm<CodeRepository>()
     const form = subform.body
 
     form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform((r) => r.fetchUrl!))
@@ -210,7 +218,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     form.CodeConfiguration.ConfigurationSource.bindPrompter(createSourcePrompter)
     form.SourceCodeVersion.Type.setDefault(() => 'BRANCH')
 
-    const codeConfigForm = new WizardForm<AppRunner.CodeConfigurationValues>()
+    const codeConfigForm = new WizardForm<CodeConfigurationValues>()
     codeConfigForm.body.Runtime.bindPrompter(createRuntimePrompter)
     codeConfigForm.body.BuildCommand.bindPrompter((state) => createBuildCommandPrompter(state.Runtime!))
     codeConfigForm.body.StartCommand.bindPrompter((state) => createStartCommandPrompter(state.Runtime!))
@@ -227,7 +235,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     return subform
 }
 
-export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
+export class AppRunnerCodeRepositoryWizard extends Wizard<SourceConfiguration> {
     constructor(
         client: AppRunnerClient,
         git: GitExtension,

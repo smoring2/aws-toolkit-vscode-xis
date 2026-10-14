@@ -11,7 +11,7 @@ import { cloudwatchLogsLiveTailScheme } from '../../../../shared/constants'
 describe('LiveTailSession URI', async function () {
     const testLogGroupName = 'test-log-group'
     const testRegion = 'test-region'
-    const testAwsCredentials = {} as any as AWS.Credentials
+    const testAwsCredentials = {} as any
     const expectedUriBase = `${cloudwatchLogsLiveTailScheme}:${testRegion}:${testLogGroupName}`
 
     it('is correct with no logStream filter, no filter pattern', function () {

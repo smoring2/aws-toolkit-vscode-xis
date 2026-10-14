@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
+import { CognitoIdentityClient, GetIdCommand } from '@aws-sdk/client-cognito-identity'
+import { fromCognitoIdentity } from '@aws-sdk/credential-provider-cognito-identity'
+import { AwsCredentialIdentityProvider } from '@aws-sdk/types'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { TelemetryClient, TelemetryFeedback } from './telemetryClient'
@@ -24,7 +26,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
     public constructor(
         private readonly clientId: string,
         private readonly region: string,
-        private readonly credentials: AWS.Credentials,
+        private readonly credentials: AwsCredentialIdentityProvider,
         private telemetryClient?: TelemetryClient
     ) {
         this._eventQueue = []
@@ -91,17 +93,11 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
     public static async fromIdentityPool(clientId: string, identityPool: string): Promise<IdentityPublisherTuple> {
         const region = identityPool.split(':')[0]
         try {
-            const res = await new CognitoIdentity({
-                region: region,
-            })
-                .getId({
+            const res = await new CognitoIdentityClient({ region: region }).send(
+                new GetIdCommand({
                     IdentityPoolId: identityPool,
                 })
-                .promise()
-            const err = res.$response.error
-            if (err) {
-                return Promise.reject(`SDK error: ${err}`)
-            }
+            )
             const identityId = res.IdentityId
             if (!identityId) {
                 throw new Error('identityId returned by Cognito call was null')
@@ -118,7 +114,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
 
     public static fromIdentityId(clientId: string, identityId: string): DefaultTelemetryPublisher {
         const region = identityId.split(':')[0]
-        const cognitoCredentials = new CognitoIdentityCredentials({ IdentityId: identityId }, { region: region })
+        const cognitoCredentials = fromCognitoIdentity({
+            identityId: identityId,
+            clientConfig: { region: region },
+        })
 
         return new this(clientId, region, cognitoCredentials)
     }

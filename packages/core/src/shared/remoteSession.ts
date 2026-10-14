@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { EvaluationResult } from '@aws-sdk/client-iam'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -20,7 +21,6 @@ import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/processUtils'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
 import { IamClient } from './clients/iamClient'
-import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
 
 const policyAttachDelay = 5000
@@ -243,7 +243,7 @@ function getSsmPolicyDocument() {
             }`
 }
 
-export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
+export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<EvaluationResult[]> {
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: roleArn,
         ActionNames: minimumSsmActions,

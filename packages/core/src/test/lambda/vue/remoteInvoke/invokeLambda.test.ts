@@ -60,7 +60,7 @@ describe('RemoteInvokeWebview', () => {
             const input = '{"key": "value"}'
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: '{"result": "success"}',
+                Payload: new TextEncoder().encode('{"result": "success"}'),
             }
             client.invoke.resolves(mockResponse)
 
@@ -71,7 +71,7 @@ describe('RemoteInvokeWebview', () => {
 
             await remoteInvokeWebview.invokeLambda(input)
             assert(client.invoke.calledOnce)
-            assert(client.invoke.calledWith(data.FunctionArn, input))
+            assert(client.invoke.calledWith(data.FunctionArn, new TextEncoder().encode(input)))
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
@@ -86,7 +86,7 @@ describe('RemoteInvokeWebview', () => {
         it('handles Lambda invocation with no payload', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: '',
+                Payload: new TextEncoder().encode(''),
             }
 
             client.invoke.resolves(mockResponse)
@@ -110,7 +110,7 @@ describe('RemoteInvokeWebview', () => {
         })
         it('handles Lambda invocation with undefined LogResult', async () => {
             const mockResponse = {
-                Payload: '{"result": "success"}',
+                Payload: new TextEncoder().encode('{"result": "success"}'),
             }
 
             client.invoke.resolves(mockResponse)

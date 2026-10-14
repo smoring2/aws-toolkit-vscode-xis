@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
-
+import { DocumentIdentifier, DocumentVersionInfo, GetDocumentResult } from '@aws-sdk/client-ssm'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -13,7 +12,7 @@ import { getIcon } from '../../shared/icons'
 
 export class DocumentItemNode extends AWSTreeNodeBase {
     public constructor(
-        private documentItem: SSM.Types.DocumentIdentifier,
+        private documentItem: DocumentIdentifier,
         public readonly client: SsmDocumentClient,
         public override readonly regionCode: string
     ) {
@@ -23,7 +22,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         this.iconPath = getIcon('vscode-file')
     }
 
-    public update(documentItem: SSM.Types.DocumentIdentifier): void {
+    public update(documentItem: DocumentIdentifier): void {
         this.documentItem = documentItem
         this.label = this.documentName
     }
@@ -36,10 +35,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         return this.documentItem.Owner || ''
     }
 
-    public async getDocumentContent(
-        documentVersion?: string,
-        documentFormat?: string
-    ): Promise<SSM.Types.GetDocumentResult> {
+    public async getDocumentContent(documentVersion?: string, documentFormat?: string): Promise<GetDocumentResult> {
         if (!this.documentName || !this.documentName.length) {
             return Promise.resolve({})
         }
@@ -61,7 +57,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         )
     }
 
-    public async listSchemaVersion(): Promise<SSM.Types.DocumentVersionInfo[]> {
+    public async listSchemaVersion(): Promise<DocumentVersionInfo[]> {
         return await toArrayAsync(this.client.listDocumentVersions(this.documentName))
     }
 }

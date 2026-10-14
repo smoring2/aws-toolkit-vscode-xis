@@ -93,7 +93,7 @@ export class FeatureConfigProvider {
                 ideVersion: extensionVersion,
             },
         }
-        return (await client.createUserSdkClient()).listFeatureEvaluations(request).promise()
+        return (await client.createUserSdkClient()).listFeatureEvaluations(request)
     }
 
     async fetchFeatureConfigs(): Promise<void> {

@@ -184,8 +184,8 @@ export async function stopJob(jobId: string) {
         })
         if (response !== undefined) {
             // always store request ID, but it will only show up in a notification if an error occurs
-            if (response.$response.requestId) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+            if (response.$metadata.requestId) {
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
             }
         }
     } catch (e: any) {
@@ -208,8 +208,8 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+        if (response.$metadata.requestId) {
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
         }
     } catch (e: any) {
         const errorMessage = `The upload failed due to: ${(e as Error).message}`
@@ -447,8 +447,8 @@ export async function startJob(uploadId: string) {
                 target: { language: targetLanguageVersion }, // always JDK17
             },
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+        if (response.$metadata.requestId) {
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
         }
         return response.transformationJobId
     } catch (e: any) {
@@ -571,8 +571,8 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+        if (response.$metadata.requestId) {
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
         }
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
@@ -636,8 +636,8 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+        if (response.$metadata.requestId) {
+            transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
         }
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
@@ -679,7 +679,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformByQState.setJobFailureErrorNotification(
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
             }
             if (validStates.includes(status)) {
                 break
@@ -697,8 +697,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                throw new JobStoppedError(response.$response.requestId)
+                transformByQState.setJobFailureMetadata(` (request ID: ${response.$metadata.requestId})`)
+                throw new JobStoppedError(response.$metadata.requestId ?? '')
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {

@@ -5,19 +5,82 @@
  * Toolkit-local logic for telemetry.
  */
 
-import { Credentials, Service } from 'aws-sdk'
+import { Sha256 } from '@aws-crypto/sha256-js'
+import { AwsCredentialIdentity, AwsCredentialIdentityProvider } from '@aws-sdk/types'
+import { HttpRequest } from '@smithy/protocol-http'
+import { SignatureV4 } from '@smithy/signature-v4'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { extensionVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import { AWSProduct, MetricDatum } from './clienttelemetry'
-import apiConfig = require('./service-2.json')
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getComputeEnvType, getSessionId } from './util'
+
+/** `signingName` of the ToolkitTelemetry service, see `service-2.json`. */
+const signingName = 'execute-api'
+
+/**
+ * Minimal client for the (private) ToolkitTelemetry service.
+ *
+ * The service has no AWS SDK v3 client package, so its two REST-JSON operations are
+ * implemented here with SigV4-signed requests.
+ */
+class ToolkitTelemetryClient {
+    private readonly signer: SignatureV4
+
+    public constructor(
+        private readonly endpoint: string,
+        region: string,
+        credentials: AwsCredentialIdentity | AwsCredentialIdentityProvider
+    ) {
+        this.signer = new SignatureV4({
+            credentials,
+            region,
+            service: signingName,
+            sha256: Sha256,
+        })
+    }
+
+    public async postMetrics(request: ClientTelemetry.PostMetricsRequest): Promise<void> {
+        return this.post('/metrics', request)
+    }
+
+    public async postFeedback(request: ClientTelemetry.PostFeedbackRequest): Promise<void> {
+        return this.post('/feedback', request)
+    }
+
+    private async post(path: string, request: object): Promise<void> {
+        const url = new URL(this.endpoint)
+        const body = JSON.stringify(request)
+        const signed = await this.signer.sign(
+            new HttpRequest({
+                method: 'POST',
+                protocol: url.protocol,
+                hostname: url.hostname,
+                port: url.port === '' ? undefined : Number(url.port),
+                path: path,
+                headers: {
+                    host: url.host,
+                    'content-type': 'application/json',
+                },
+                body: body,
+            })
+        )
+
+        const response = await fetch(`${url.origin}${path}`, {
+            method: 'POST',
+            headers: signed.headers as Record<string, string>,
+            body: body,
+        })
+
+        if (!response.ok) {
+            throw new Error(`ToolkitTelemetry: POST ${path} failed (${response.status}): ${await response.text()}`)
+        }
+    }
+}
 
 export const accountMetadataKey = 'awsAccount'
 export const regionKey = 'awsRegion'
@@ -86,7 +149,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private constructor(
         private readonly clientId: string,
-        private readonly client: ClientTelemetry
+        private readonly client: ToolkitTelemetryClient
     ) {}
 
     /**
@@ -101,8 +164,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             }
 
             if (!isAutomation()) {
-                await this.client
-                    .postMetrics({
+                await this.client.postMetrics({
                         AWSProduct: DefaultTelemetryClient.productName,
                         AWSProductVersion: extensionVersion,
                         ClientID: this.clientId,
@@ -112,9 +174,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         ComputeEnv: await getComputeEnvType(),
                         ParentProduct: vscode.env.appName,
                         ParentProductVersion: vscode.version,
-                        MetricData: batch,
-                    })
-                    .promise()
+                    MetricData: batch,
+                })
                 this.logger.info(`telemetry: sent batch (size=${batch.length})`)
             } else {
                 this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
@@ -130,8 +191,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
         try {
-            await this.client
-                .postFeedback({
+            await this.client.postFeedback({
                     AWSProduct: DefaultTelemetryClient.productName,
                     AWSProductVersion: extensionVersion,
                     OS: os.platform(),
@@ -140,9 +200,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
                     Comment: feedback.comment,
-                    Sentiment: feedback.sentiment,
-                })
-                .promise()
+                Sentiment: feedback.sentiment,
+            })
             this.logger.debug(`ComputeEnv detected for telemetry: ${await getComputeEnvType()}`)
             this.logger.info('Successfully posted feedback')
         } catch (err) {
@@ -154,25 +213,11 @@ export class DefaultTelemetryClient implements TelemetryClient {
     public static async createDefaultClient(
         clientId: string,
         region: string,
-        credentials: Credentials
+        credentials: AwsCredentialIdentity | AwsCredentialIdentityProvider
     ): Promise<DefaultTelemetryClient> {
-        await credentials.getPromise()
-
         return new DefaultTelemetryClient(
             clientId,
-            (await globals.sdkClientBuilder.createAwsService(
-                Service,
-                {
-                    // apiConfig is internal and not in the TS declaration file
-                    apiConfig: apiConfig,
-                    region: region,
-                    credentials: credentials,
-                    correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.config.endpoint,
-                } as ServiceConfigurationOptions,
-                undefined,
-                false
-            )) as ClientTelemetry
+            new ToolkitTelemetryClient(DefaultTelemetryClient.config.endpoint, region, credentials)
         )
     }
 }

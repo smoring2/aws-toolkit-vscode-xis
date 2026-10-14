@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Service, Token } from 'aws-sdk'
 import { omit } from 'lodash'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { ServiceOptions } from '../../shared/awsClientBuilder'
+import { AwsJsonClientConfig, createAwsJsonClient } from '../../shared/awsJsonClient'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
@@ -35,34 +34,24 @@ import {
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
     maxRetries: 0,
-    retryDelayOptions: {
-        // The default number of milliseconds to use in the exponential backoff
-        base: 500,
-    },
 }
 
-// Create a client for featureDev proxy client based off of aws sdk v2
-export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
+/** Creates a client for the featureDev proxy service. */
+export async function createFeatureDevProxyClient(
+    options?: Partial<AwsJsonClientConfig>
+): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
-    return (await globals.sdkClientBuilder.createAwsService(
-        Service,
-        {
-            apiConfig: apiConfig,
-            region: cwsprConfig.region,
-            endpoint: cwsprConfig.endpoint,
-            token: new Token({ token: bearerToken }),
-            httpOptions: {
-                connectTimeout: 10000, // 10 seconds, 3 times P99 API latency
-            },
-            ...options,
-        } as ServiceOptions,
-        undefined
-    )) as FeatureDevProxyClient
+    return createAwsJsonClient<FeatureDevProxyClient>(apiConfig, {
+        region: cwsprConfig.region,
+        endpoint: cwsprConfig.endpoint,
+        bearerToken: bearerToken,
+        ...options,
+    })
 }
 
 export class FeatureDevClient {
-    public async getClient(options?: Partial<ServiceOptions>) {
+    public async getClient(options?: Partial<AwsJsonClientConfig>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
         return await createFeatureDevProxyClient(options)
@@ -72,10 +61,10 @@ export class FeatureDevClient {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
-            const { conversationId, $response } = await client.createTaskAssistConversation().promise()
+            const { conversationId, $metadata } = await client.createTaskAssistConversation({})
             getLogger().debug(`${featureName}: Created conversation: %O`, {
                 conversationId,
-                requestId: $response.requestId,
+                requestId: $metadata.requestId,
             })
             return conversationId
         } catch (e) {
@@ -119,10 +108,10 @@ export class FeatureDevClient {
                 contentLength,
             }
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
-            const response = await client.createUploadUrl(params).promise()
+            const response = await client.createUploadUrl(params)
             getLogger().debug(`${featureName}: Created upload url: %O`, {
                 uploadId: uploadId,
-                requestId: response.$response.requestId,
+                requestId: response.$metadata.requestId,
             })
             return response
         } catch (e) {
@@ -173,7 +162,7 @@ export class FeatureDevClient {
                 params.intentContext = intentContext
             }
             getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
-            const response = await client.startTaskAssistCodeGeneration(params).promise()
+            const response = await client.startTaskAssistCodeGeneration(params)
 
             return response
         } catch (e) {
@@ -211,7 +200,7 @@ export class FeatureDevClient {
                 conversationId,
             }
             getLogger().debug(`Executing getTaskAssistCodeGeneration with %O`, params)
-            const response = await client.getTaskAssistCodeGeneration(params).promise()
+            const response = await client.getTaskAssistCodeGeneration(params)
 
             return response
         } catch (e) {
@@ -328,9 +317,9 @@ export class FeatureDevClient {
                     ideVersion: extensionVersion,
                 },
             }
-            const response = await client.sendTelemetryEvent(params).promise()
+            const response = await client.sendTelemetryEvent(params)
             getLogger().debug(
-                `${featureName}: successfully sent ${eventName} telemetryEvent:${'conversationId' in event ? ' ConversationId: ' + event.conversationId : ''} RequestId: ${response.$response.requestId}`
+                `${featureName}: successfully sent ${eventName} telemetryEvent:${'conversationId' in event ? ' ConversationId: ' + event.conversationId : ''} RequestId: ${response.$metadata.requestId}`
             )
         } catch (e) {
             getLogger().error(

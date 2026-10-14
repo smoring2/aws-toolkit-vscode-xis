@@ -31,7 +31,7 @@ export async function getPresignedUrlAndUpload(
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })
-    getLogger().verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
+    getLogger().verbose(`CreateUploadUrlRequest requestId: ${srcResp.$metadata.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
     await uploadArtifactToS3(zipFilePath, srcResp)
@@ -63,7 +63,7 @@ export async function createCodeFixJob(
         getLogger().error(`Failed creating code fix job. Request id: ${err.requestId}`)
         throw new CreateCodeFixError()
     })
-    getLogger().info(`AmazonQ generate fix Request id: ${resp.$response.requestId}`)
+    getLogger().info(`AmazonQ generate fix Request id: ${resp.$metadata.requestId}`)
     return resp
 }
 
@@ -79,7 +79,7 @@ export async function pollCodeFixJobStatus(client: DefaultCodeWhispererClient, j
             jobId,
         }
         const resp = await client.getCodeFixJob(req)
-        getLogger().verbose(`GetCodeFixJobRequest requestId: ${resp.$response.requestId}`)
+        getLogger().verbose(`GetCodeFixJobRequest requestId: ${resp.$metadata.requestId}`)
         if (resp.jobStatus !== 'InProgress') {
             status = resp.jobStatus
             getLogger().verbose(`Code fix job status: ${status}`)

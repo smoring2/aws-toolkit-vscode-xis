@@ -49,7 +49,7 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
         getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
         throw new CreateUploadUrlError(err)
     })
-    logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
+    logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$metadata.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
     await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp)
@@ -98,12 +98,9 @@ export async function createTestJob(
         logger.error(`Failed creating test job. Request id: ${err.requestId}`)
         throw err
     })
-    logger.info('Unit test generation request id: %s', resp.$response.requestId)
-    logger.debug('Unit test generation data: %O', resp.$response.data)
-    ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$response.requestId
-    if (resp.$response.error) {
-        logger.error('Unit test generation error: %O', resp.$response.error)
-    }
+    logger.info('Unit test generation request id: %s', resp.$metadata.requestId)
+    logger.debug('Unit test generation data: %O', resp)
+    ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$metadata.requestId
     if (resp.testGenerationJob) {
         ChatSessionManager.Instance.getSession().listOfTestGenerationJobId.push(
             resp.testGenerationJob?.testGenerationJobId
@@ -135,7 +132,7 @@ export async function pollTestJobStatus(
             testGenerationJobGroupName: jobGroupName,
         }
         const resp = await codewhispererClient.codeWhispererClient.getTestGeneration(req)
-        logger.verbose('pollTestJobStatus request id: %s', resp.$response.requestId)
+        logger.verbose('pollTestJobStatus request id: %s', resp.$metadata.requestId)
         logger.debug('pollTestJobStatus testGenerationJob %O', resp.testGenerationJob)
         ChatSessionManager.Instance.getSession().testGenerationJob = resp.testGenerationJob
         const progressRate = resp.testGenerationJob?.progressRate ?? 0

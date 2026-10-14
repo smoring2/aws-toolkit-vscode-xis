@@ -68,27 +68,19 @@ export class DefaultAppRunnerClient {
         return (await this.createSdkClient()).send(new UpdateServiceCommand(request))
     }
 
-    public async createConnection(
-        request: CreateConnectionRequest
-    ): Promise<CreateConnectionResponse> {
+    public async createConnection(request: CreateConnectionRequest): Promise<CreateConnectionResponse> {
         return (await this.createSdkClient()).send(new CreateConnectionCommand(request))
     }
 
-    public async listConnections(
-        request: ListConnectionsRequest = {}
-    ): Promise<ListConnectionsResponse> {
+    public async listConnections(request: ListConnectionsRequest = {}): Promise<ListConnectionsResponse> {
         return (await this.createSdkClient()).send(new ListConnectionsCommand(request))
     }
 
-    public async describeService(
-        request: DescribeServiceRequest
-    ): Promise<DescribeServiceResponse> {
+    public async describeService(request: DescribeServiceRequest): Promise<DescribeServiceResponse> {
         return (await this.createSdkClient()).send(new DescribeServiceCommand(request))
     }
 
-    public async startDeployment(
-        request: StartDeploymentRequest
-    ): Promise<StartDeploymentResponse> {
+    public async startDeployment(request: StartDeploymentRequest): Promise<StartDeploymentResponse> {
         return (await this.createSdkClient()).send(new StartDeploymentCommand(request))
     }
 

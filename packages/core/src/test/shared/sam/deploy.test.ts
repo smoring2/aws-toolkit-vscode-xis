@@ -2,8 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { StackSummary } from '@aws-sdk/client-cloudformation'
+import { Bucket } from '@aws-sdk/client-s3'
 import * as vscode from 'vscode'
-import { CloudFormation, S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
@@ -1288,7 +1290,7 @@ describe('SAM Deploy', () => {
 })
 
 const s3BucketListSummary: Array<
-    RequiredProps<S3.Bucket, 'Name'> & {
+    RequiredProps<Bucket, 'Name'> & {
         readonly region: string
     }
 > = [
@@ -1297,22 +1299,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
     ],
 ]

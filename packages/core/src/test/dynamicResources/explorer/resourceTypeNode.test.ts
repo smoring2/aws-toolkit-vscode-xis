@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ResourceDescription } from '@aws-sdk/client-cloudcontrol'
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
@@ -13,7 +14,6 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 import sinon from 'sinon'
 
@@ -183,7 +183,7 @@ describe('ResourceTypeNode', function () {
         cloudControl.listResources = sinon.stub().resolves({
             TypeName: fakeTypeName,
             NextToken: undefined,
-            ResourceDescriptions: resourceIdentifiers.map<CloudControl.ResourceDescription>((identifier) => {
+            ResourceDescriptions: resourceIdentifiers.map<ResourceDescription>((identifier) => {
                 return {
                     Identifier: identifier,
                     ResourceModel: '',

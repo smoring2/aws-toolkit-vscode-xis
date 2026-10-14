@@ -192,9 +192,7 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
     return val
 }
 
-export async function* listStateMachines(
-    client: StepFunctionsClient
-): AsyncIterableIterator<StateMachineListItem> {
+export async function* listStateMachines(client: StepFunctionsClient): AsyncIterableIterator<StateMachineListItem> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.statemachines', 'Loading State Machines...')
     )

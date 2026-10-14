@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    CreateDocumentRequest,
-    UpdateDocumentRequest,
-} from '@aws-sdk/client-ssm'
+import { CreateDocumentRequest, UpdateDocumentRequest } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()

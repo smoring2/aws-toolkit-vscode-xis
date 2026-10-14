@@ -29,7 +29,7 @@ import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
-import { AWSClientBuilderV3, DefaultAWSClientBuilder } from './shared/awsClientBuilder'
+import { AWSClientBuilderV3 } from './shared/awsClientBuilder'
 import { initialize as initializeAuth } from './auth/activation'
 import { LoginManager } from './auth/deprecated/loginManager'
 import { CredentialsStore } from './auth/credentials/store'
@@ -42,7 +42,6 @@ import { showQuickStartWebview } from './shared/extensionStartup'
 import { ExtContext, VSCODE_EXTENSION_ID } from './shared/extensions'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { UriHandler } from './shared/vscode/uriHandler'
-import { disableAwsSdkWarning } from './shared/awsClientBuilder'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { ResourceFetcher } from './shared/resourcefetcher/resourcefetcher'
 import { registerCommands } from './commands'
@@ -52,8 +51,6 @@ import { registerCommands } from './commands'
 import endpoints from '../resources/endpoints.json'
 import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
-
-disableAwsSdkWarning()
 
 let localize: nls.LocalizeFunc
 
@@ -115,7 +112,6 @@ export async function activateCommon(
     // setup globals
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
-    globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
     globals.sdkClientBuilderV3 = new AWSClientBuilderV3(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 

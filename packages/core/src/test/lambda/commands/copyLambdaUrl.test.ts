@@ -22,7 +22,7 @@ import { getTestWindow } from '../../shared/vscode/window'
  */
 export function buildFunctionUrlConfig(options: Partial<FunctionUrlConfig>): FunctionUrlConfig {
     return {
-        AuthType: options.AuthType ?? '',
+        AuthType: options.AuthType ?? 'NONE',
         CreationTime: options.CreationTime ?? '',
         FunctionArn: options.FunctionArn ?? '',
         FunctionUrl: options.FunctionUrl ?? '',
@@ -94,10 +94,10 @@ describe('lambda func url prompter', async () => {
         const tester = createQuickPickPrompterTester(prompter)
         tester.assertItems(
             configList.map((c) => {
-                return { label: c.FunctionArn, data: c.FunctionUrl } // order matters
+                return { label: c.FunctionArn!, data: c.FunctionUrl! } // order matters
             })
         )
-        tester.acceptItem(configList[1].FunctionArn)
+        tester.acceptItem(configList[1].FunctionArn!)
         await tester.result(configList[1].FunctionUrl)
     })
 })

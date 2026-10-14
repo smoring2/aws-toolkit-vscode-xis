@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'

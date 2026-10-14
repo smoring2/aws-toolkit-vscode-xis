@@ -62,9 +62,7 @@ export class DefaultIamClient {
         await sdkClient.send(new AttachRolePolicyCommand(request))
     }
 
-    public async simulatePrincipalPolicy(
-        request: SimulatePrincipalPolicyRequest
-    ): Promise<SimulatePolicyResponse> {
+    public async simulatePrincipalPolicy(request: SimulatePrincipalPolicyRequest): Promise<SimulatePolicyResponse> {
         const sdkClient = await this.createSdkClient()
         return await sdkClient.send(new SimulatePrincipalPolicyCommand(request))
     }
@@ -128,7 +126,8 @@ export class DefaultIamClient {
     public async putRolePolicy(roleArn: string, policyName: string, policyDocument: string): Promise<void> {
         const client = await this.createSdkClient()
         const roleName = this.getFriendlyName(roleArn)
-        await client
-            .send(new PutRolePolicyCommand({ RoleName: roleName, PolicyName: policyName, PolicyDocument: policyDocument }))
+        await client.send(
+            new PutRolePolicyCommand({ RoleName: roleName, PolicyName: policyName, PolicyDocument: policyDocument })
+        )
     }
 }

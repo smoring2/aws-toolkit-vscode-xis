@@ -23,13 +23,13 @@ import {
 } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { UnauthorizedException } from '@aws-sdk/client-sso'
-import { AWSError } from 'aws-sdk'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { OidcClient } from '../../auth/sso/clients'
 import { SamCliError } from '../../shared/sam/cli/samCliInvokerUtils'
 import { DiskCacheError } from '../../shared/utilities/cacheUtils'
+import { AwsError } from '../../shared/errors'
 
-class TestAwsError extends Error implements AWSError {
+class TestAwsError extends Error implements AwsError {
     constructor(
         readonly code: string,
         message: string,

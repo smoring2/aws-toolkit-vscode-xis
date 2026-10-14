@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PromiseResult } from 'aws-sdk/lib/request'
+import { ResponseMetadataBearer } from 'aws-core-vscode/shared'
 import { Stub, stub } from 'aws-core-vscode/test'
-import { AWSError, HttpResponse } from 'aws-sdk'
 import {
     CodeAnalysisScope,
     RawCodeScanIssue,
@@ -47,17 +46,8 @@ const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanI
 const buildMockListCodeScanFindingsResponse = (
     codeScanFindings: string = JSON.stringify([buildRawCodeScanIssue()]),
     nextToken?: boolean
-): Awaited<Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>>> => ({
-    $response: {
-        hasNextPage: () => false,
-        nextPage: () => undefined,
-        data: undefined,
-        error: undefined,
-        requestId: '',
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
+): ListCodeScanFindingsResponse & ResponseMetadataBearer => ({
+    $metadata: { requestId: '' },
     codeScanFindings,
     nextToken: nextToken ? 'nextToken' : undefined,
 })

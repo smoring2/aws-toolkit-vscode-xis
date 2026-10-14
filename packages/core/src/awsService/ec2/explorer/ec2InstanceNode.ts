@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InstanceStateName } from '@aws-sdk/client-ec2'
 import * as vscode from 'vscode'
-import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2Client, Ec2InstanceStatus, getNameOfInstance } from '../../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
@@ -69,7 +68,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return Ec2InstancePendingContext
     }
 
-    public setInstanceStatus(instanceStatus: InstanceStateName) {
+    public setInstanceStatus(instanceStatus: Ec2InstanceStatus) {
         this.instance.LastSeenStatus = instanceStatus
     }
 
@@ -80,7 +79,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public getStatus(): InstanceStateName {
+    public getStatus(): Ec2InstanceStatus {
         return this.instance.LastSeenStatus
     }
 

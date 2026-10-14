@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Bucket } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { S3 } from 'aws-sdk'
 import {
     FileSizeBytes,
     getFilesToUpload,
@@ -42,10 +43,10 @@ describe('uploadFileCommand', function () {
     let bucketNode: S3BucketNode
     let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
-    let mockedUpload: S3.ManagedUpload
+    let mockedUpload: Upload
 
     beforeEach(function () {
-        mockedUpload = {} as any as S3.ManagedUpload
+        mockedUpload = {} as any as Upload
         s3 = {} as any as S3Client
         bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
         outputChannel = new MockOutputChannel()
@@ -62,7 +63,7 @@ describe('uploadFileCommand', function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
             const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = promiseStub
 
             getFile = (document) => {
                 return new Promise((resolve, reject) => {
@@ -117,7 +118,7 @@ describe('uploadFileCommand', function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
             const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = promiseStub
 
             await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
 
@@ -166,7 +167,7 @@ describe('uploadFileCommand', function () {
         const uploadStub = sinon.stub().resolves(mockedUpload)
         s3.uploadFile = uploadStub
         const promiseStub = sinon.stub().resolves()
-        mockedUpload.promise = promiseStub
+        mockedUpload.done = promiseStub
         getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
 
         // Upload to bucket.
@@ -260,7 +261,7 @@ describe('promptUserForBucket', async function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
 
     let s3: S3Client
-    let buckets: S3.Bucket[]
+    let buckets: Bucket[]
 
     const promptUndef: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>

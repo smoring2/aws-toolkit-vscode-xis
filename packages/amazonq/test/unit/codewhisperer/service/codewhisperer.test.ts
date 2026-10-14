@@ -4,15 +4,8 @@
  */
 
 import sinon from 'sinon'
-import {
-    CodeWhispererUserClient,
-    SendTelemetryEventResponse,
-    TelemetryEvent,
-    AuthUtil,
-    codeWhispererClient,
-} from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererUserClient, TelemetryEvent, AuthUtil, codeWhispererClient } from 'aws-core-vscode/codewhisperer'
 import { globals, getClientId, getOperatingSystem } from 'aws-core-vscode/shared'
-import { AWSError, Request } from 'aws-sdk'
 import { createSpyClient } from 'aws-core-vscode/test'
 
 describe('codewhisperer', async function () {
@@ -102,14 +95,9 @@ describe('codewhisperer', async function () {
     })
 
     it('sendTelemetryEvent should be called with UserContext payload', async function () {
-        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').returns({
-            promise: () =>
-                Promise.resolve({
-                    $response: {
-                        requestId: '',
-                    },
-                }),
-        } as Request<SendTelemetryEventResponse, AWSError>)
+        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').resolves({
+            $metadata: { requestId: '' },
+        })
 
         const expectedUserContext = {
             ideCategory: 'VSCODE',
@@ -127,14 +115,9 @@ describe('codewhisperer', async function () {
         isSso: boolean,
         isTelemetryEnabled: boolean
     ) {
-        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').returns({
-            promise: () =>
-                Promise.resolve({
-                    $response: {
-                        requestId: '',
-                    },
-                }),
-        } as Request<SendTelemetryEventResponse, AWSError>)
+        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').resolves({
+            $metadata: { requestId: '' },
+        })
 
         const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
         await globals.telemetry.setTelemetryEnabled(isTelemetryEnabled)

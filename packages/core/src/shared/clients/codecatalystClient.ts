@@ -242,10 +242,7 @@ async function createCodeCatalystClient(
     return c
 }
 
-export type UserDetails = RequiredProps<
-    GetUserDetailsResponse,
-    'userId' | 'userName' | 'displayName' | 'primaryEmail'
->
+export type UserDetails = RequiredProps<GetUserDetailsResponse, 'userId' | 'userName' | 'displayName' | 'primaryEmail'>
 
 // CodeCatalyst client has two variants: 'logged-in' and 'not logged-in'
 // The 'not logged-in' variant is a subtype and has restricted functionality
@@ -291,9 +288,7 @@ export async function createClient(
 }
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
-function fixAliasInRequest<
-    T extends CreateDevEnvironmentRequest | UpdateDevEnvironmentRequest,
->(request: T): T {
+function fixAliasInRequest<T extends CreateDevEnvironmentRequest | UpdateDevEnvironmentRequest>(request: T): T {
     if (!request.alias) {
         delete request.alias
     }
@@ -341,11 +336,7 @@ class CodeCatalystClientInternal {
 
     private async call<T extends object>(command: CodeCatalystCommand<T>, silent: true, defaultVal: T): Promise<T>
     private async call<T extends object>(command: CodeCatalystCommand<T>, silent: false): Promise<T>
-    private async call<T extends object>(
-        command: CodeCatalystCommand<T>,
-        silent: boolean,
-        defaultVal?: T
-    ): Promise<T> {
+    private async call<T extends object>(command: CodeCatalystCommand<T>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
         const perflog = new PerfLog('API request')
@@ -431,9 +422,7 @@ class CodeCatalystClientInternal {
      * @param args.expires PAT expires on this date, or undefined.
      * @returns PAT secret
      */
-    public async createAccessToken(
-        args: CreateAccessTokenRequest
-    ): Promise<CreateAccessTokenResponse> {
+    public async createAccessToken(args: CreateAccessTokenRequest): Promise<CreateAccessTokenResponse> {
         try {
             return this.call(new CreateAccessTokenCommand(args), false)
         } catch (e) {
@@ -444,9 +433,7 @@ class CodeCatalystClientInternal {
         }
     }
 
-    public async getSubscription(
-        request: GetSubscriptionRequest
-    ): Promise<GetSubscriptionResponse> {
+    public async getSubscription(request: GetSubscriptionRequest): Promise<GetSubscriptionResponse> {
         return this.call(new GetSubscriptionCommand(request), false)
     }
 
@@ -616,9 +603,7 @@ class CodeCatalystClientInternal {
         )
     }
 
-    public listBranches(
-        request: ListSourceRepositoryBranchesRequest
-    ): AsyncCollection<CodeCatalystBranch[]> {
+    public listBranches(request: ListSourceRepositoryBranchesRequest): AsyncCollection<CodeCatalystBranch[]> {
         const requester = async (request: ListSourceRepositoryBranchesRequest) =>
             this.call(new ListSourceRepositoryBranchesCommand(request), true, { items: [], $metadata: {} })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
@@ -626,9 +611,7 @@ class CodeCatalystClientInternal {
         return collection
             .filter(isNonNullable)
             .map((items) =>
-                items.map((b) =>
-                    toBranch(request.spaceName!, request.projectName!, request.sourceRepositoryName!, b)
-                )
+                items.map((b) => toBranch(request.spaceName!, request.projectName!, request.sourceRepositoryName!, b))
             )
     }
 
@@ -695,9 +678,7 @@ class CodeCatalystClientInternal {
         })
     }
 
-    public async startDevEnvironment(
-        args: StartDevEnvironmentRequest
-    ): Promise<StartDevEnvironmentResponse> {
+    public async startDevEnvironment(args: StartDevEnvironmentRequest): Promise<StartDevEnvironmentResponse> {
         return this.call(new StartDevEnvironmentCommand(args), false)
     }
 
@@ -717,9 +698,7 @@ class CodeCatalystClientInternal {
         return { ...r, sessionId: r.sessionId }
     }
 
-    public async stopDevEnvironment(
-        args: StopDevEnvironmentRequest
-    ): Promise<StopDevEnvironmentResponse> {
+    public async stopDevEnvironment(args: StopDevEnvironmentRequest): Promise<StopDevEnvironmentResponse> {
         return this.call(new StopDevEnvironmentCommand(args), false)
     }
 
@@ -732,15 +711,11 @@ class CodeCatalystClientInternal {
         return toDevEnv(args.spaceName!, args.projectName!, { ...args, ...r })
     }
 
-    public async deleteDevEnvironment(
-        args: DeleteDevEnvironmentRequest
-    ): Promise<DeleteDevEnvironmentResponse> {
+    public async deleteDevEnvironment(args: DeleteDevEnvironmentRequest): Promise<DeleteDevEnvironmentResponse> {
         return this.call(new DeleteDevEnvironmentCommand(args), false)
     }
 
-    public updateDevEnvironment(
-        args: UpdateDevEnvironmentRequest
-    ): Promise<UpdateDevEnvironmentResponse> {
+    public updateDevEnvironment(args: UpdateDevEnvironmentRequest): Promise<UpdateDevEnvironmentResponse> {
         return this.call(new UpdateDevEnvironmentCommand(fixAliasInRequest(args)), false)
     }
 
@@ -775,7 +750,7 @@ class CodeCatalystClientInternal {
         }
 
         function getName(): string {
-            const fullname = alias ? alias : args.id ?? '?'
+            const fullname = alias ? alias : (args.id ?? '?')
             const shortname = fullname.substring(0, 19) + (fullname.length > 20 ? '…' : '')
             return shortname
         }

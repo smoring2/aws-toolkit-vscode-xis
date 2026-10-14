@@ -21,9 +21,7 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { sampleRequestManifestPath } from './constants'
 import globals from '../shared/extensionGlobals'
 
-export async function* listCloudFormationStacks(
-    client: CloudFormationClient
-): AsyncIterableIterator<StackSummary> {
+export async function* listCloudFormationStacks(client: CloudFormationClient): AsyncIterableIterator<StackSummary> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(

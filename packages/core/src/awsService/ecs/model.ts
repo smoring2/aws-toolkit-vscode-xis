@@ -3,12 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    Cluster as EcsCluster,
-    ContainerDefinition,
-    Service as EcsService,
-    Task,
-} from '@aws-sdk/client-ecs'
+import { Cluster as EcsCluster, ContainerDefinition, Service as EcsService, Task } from '@aws-sdk/client-ecs'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 

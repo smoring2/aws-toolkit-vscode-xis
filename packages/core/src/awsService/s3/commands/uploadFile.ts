@@ -282,7 +282,7 @@ async function uploadBatchOfFiles(
 
             token.onCancellationRequested((e) => {
                 if (uploadRequests[requestIdx].ongoingUpload) {
-                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                    void uploadRequests[requestIdx].ongoingUpload?.abort()
                 }
                 return failedRequests
             })
@@ -378,7 +378,7 @@ async function uploadWithProgress(
 
     const cancelled = new Promise<void>((_, reject) => {
         token.onCancellationRequested((e) => {
-            currentStream.abort()
+            void currentStream.abort()
             reject(new CancellationError('user'))
         })
     })

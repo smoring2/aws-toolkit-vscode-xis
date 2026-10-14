@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DocumentVersionInfo,
-} from '@aws-sdk/client-ssm'
+import { DocumentVersionInfo } from '@aws-sdk/client-ssm'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 

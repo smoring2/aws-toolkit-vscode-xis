@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DescribeLogStreamsRequest,
-} from '@aws-sdk/client-cloudwatch-logs'
+import { DescribeLogStreamsRequest } from '@aws-sdk/client-cloudwatch-logs'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { createCommonButtons } from '../../../shared/ui/buttons'

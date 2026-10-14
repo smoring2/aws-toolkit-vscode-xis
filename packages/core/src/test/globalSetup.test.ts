@@ -21,14 +21,12 @@ import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
 import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
-import { disableAwsSdkWarning } from '../shared/awsClientBuilder'
 import { GlobalState } from '../shared/globalState'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { mockFeatureConfigsData } from './fake/mockFeatureConfigData'
 import { fs } from '../shared'
 import { promises as nodefs } from 'fs' // eslint-disable-line no-restricted-imports
 
-disableAwsSdkWarning()
 const testReportDir = join(__dirname, '../../../../../.test-reports') // Root project, not subproject
 const testLogOutput = join(testReportDir, 'testLog.log')
 const globalSandbox = sinon.createSandbox()

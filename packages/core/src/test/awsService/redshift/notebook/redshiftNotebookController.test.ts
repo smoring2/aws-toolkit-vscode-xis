@@ -8,10 +8,10 @@ import { RedshiftNotebookController } from '../../../../awsService/redshift/note
 import sinon = require('sinon')
 import assert = require('assert')
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftDataClient } from '@aws-sdk/client-redshift-data'
 
 describe('RedshiftNotebookController', () => {
-    const mockRedshiftData = <RedshiftData>{}
+    const mockRedshiftData = <RedshiftDataClient>{}
     const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
     let notebookController: any
     let createNotebookControllerStub: any
@@ -33,7 +33,7 @@ describe('RedshiftNotebookController', () => {
     })
     it('validating parameters of  a notebook controller instance', () => {
         assert.strictEqual(notebookController.id, 'aws-redshift-sql-notebook')
-        assert.strictEqual(notebookController.label, 'Redshift SQL notebook')
+        assert.strictEqual(notebookController.label, 'RedshiftClient SQL notebook')
         assert.deepStrictEqual(notebookController.supportedLanguages, ['sql'])
         assert.strictEqual(notebookController._executionOrder, 0)
     })

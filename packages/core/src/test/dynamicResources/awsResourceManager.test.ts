@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DescribeTypeOutput } from '@aws-sdk/client-cloudformation'
+import { GetResourceInput } from '@aws-sdk/client-cloudcontrol'
 import assert from 'assert'
 import * as testutil from '../testUtil'
 import * as sinon from 'sinon'
@@ -20,7 +22,6 @@ import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
-import { CloudControl, CloudFormation } from 'aws-sdk'
 import { fs } from '../../shared'
 
 describe('ResourceManager', function () {
@@ -221,7 +222,7 @@ describe('ResourceManager', function () {
     })
 
     function mockClients(): void {
-        cloudControl.getResource.callsFake(async (request: CloudControl.GetResourceInput) => {
+        cloudControl.getResource.callsFake(async (request: GetResourceInput) => {
             assert.deepStrictEqual(request, {
                 TypeName: fakeTypeName,
                 Identifier: fakeIdentifier,
@@ -237,7 +238,7 @@ describe('ResourceManager', function () {
         })
         cloudFormation.describeType.callsFake(async (name: string) => {
             if (name === fakeTypeName) {
-                return { Schema: '{}' } as any as CloudFormation.DescribeTypeOutput
+                return { Schema: '{}' } as any as DescribeTypeOutput
             }
             throw new Error()
         })

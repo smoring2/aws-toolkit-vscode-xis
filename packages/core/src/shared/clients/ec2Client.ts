@@ -34,12 +34,20 @@ import { ToolkitError, isAwsError } from '../errors'
 import { decodeBase64 } from '../utilities/textUtilities'
 
 /**
+ * An EC2 instance state name.
+ *
+ * The AWS SDK v2 typings widened their enums with `string`, so this preserves the previous
+ * behavior for callers which pass arbitrary status strings.
+ */
+export type Ec2InstanceStatus = InstanceStateName | string
+
+/**
  * A wrapper around Instance where we can safely assume InstanceId field exists.
  */
 export interface SafeEc2Instance extends Instance {
     InstanceId: string
     Name?: string
-    LastSeenStatus: InstanceStateName
+    LastSeenStatus: Ec2InstanceStatus
 }
 
 interface SafeEc2GetConsoleOutputResult extends GetConsoleOutputRequest {
@@ -57,7 +65,8 @@ export class Ec2Client {
     public async getInstances(filters?: Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
         const client = await this.createSdkClient()
 
-        const requester = async (request: DescribeInstancesRequest) => client.send(new DescribeInstancesCommand(request))
+        const requester = async (request: DescribeInstancesRequest) =>
+            client.send(new DescribeInstancesCommand(request))
         const collection = pageableToCollection(
             requester,
             filters ? { Filters: filters } : {},
@@ -105,7 +114,7 @@ export class Ec2Client {
             .filter((instance) => instance!.InstanceId !== undefined)
     }
 
-    public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
+    public async getInstanceStatus(instanceId: string): Promise<Ec2InstanceStatus> {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstanceStatusRequest) =>
             client.send(new DescribeInstanceStatusCommand(request))

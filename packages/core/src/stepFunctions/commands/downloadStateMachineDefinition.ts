@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DescribeStateMachineOutput,
-} from '@aws-sdk/client-sfn'
+import { DescribeStateMachineOutput } from '@aws-sdk/client-sfn'
 import * as nls from 'vscode-nls'
 import * as os from 'os'
 const localize = nls.loadMessageBundle()

@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    Role,
-} from '@aws-sdk/client-iam'
+import { Role } from '@aws-sdk/client-iam'
 import { IamClient } from '../../clients/iamClient'
 import { createCommonButtons, createPlusButton, createRefreshButton } from '../buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'

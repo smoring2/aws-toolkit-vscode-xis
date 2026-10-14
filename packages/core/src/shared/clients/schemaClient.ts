@@ -79,12 +79,13 @@ export class DefaultSchemaClient {
     ): Promise<DescribeSchemaResponse> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new DescribeSchemaCommand({
+        return await client.send(
+            new DescribeSchemaCommand({
                 RegistryName: registryName,
                 SchemaName: schemaName,
                 SchemaVersion: schemaVersion,
-            }))
+            })
+        )
     }
 
     public async *listSchemaVersions(
@@ -109,10 +110,7 @@ export class DefaultSchemaClient {
         } while (request.NextToken)
     }
 
-    public async *searchSchemas(
-        keywords: string,
-        registryName: string
-    ): AsyncIterableIterator<SearchSchemaSummary> {
+    public async *searchSchemas(keywords: string, registryName: string): AsyncIterableIterator<SearchSchemaSummary> {
         const client = await this.createSdkClient()
 
         const request: SearchSchemasRequest = {
@@ -139,13 +137,14 @@ export class DefaultSchemaClient {
     ): Promise<GetCodeBindingSourceResponse> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new GetCodeBindingSourceCommand({
+        return await client.send(
+            new GetCodeBindingSourceCommand({
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
                 SchemaVersion: schemaVersion,
-            }))
+            })
+        )
     }
 
     public async putCodeBinding(
@@ -156,13 +155,14 @@ export class DefaultSchemaClient {
     ): Promise<PutCodeBindingResponse> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new PutCodeBindingCommand({
+        return await client.send(
+            new PutCodeBindingCommand({
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
                 SchemaVersion: schemaVersion,
-            }))
+            })
+        )
     }
     public async describeCodeBinding(
         language: string,
@@ -172,13 +172,14 @@ export class DefaultSchemaClient {
     ): Promise<DescribeCodeBindingResponse> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new DescribeCodeBindingCommand({
+        return await client.send(
+            new DescribeCodeBindingCommand({
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
                 SchemaVersion: schemaVersion,
-            }))
+            })
+        )
     }
 
     private async createSdkClient(): Promise<Client> {

@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import * as assert from 'assert'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { startSshAgent, testSshConnection } from '../../../shared/extensions/ssh'
@@ -9,7 +11,6 @@ import { createBoundProcess } from '../../../shared/remoteSession'
 import { createExecutableFile, createTestWorkspaceFolder } from '../../testUtil'
 import { WorkspaceFolder } from 'vscode'
 import path from 'path'
-import { SSM } from 'aws-sdk'
 import { fs } from '../../../shared/fs/fs'
 import { isWin } from '../../../shared/vscode/env'
 
@@ -71,7 +72,7 @@ describe('testSshConnection', function () {
             SessionId: 'testSession',
             StreamUrl: 'testUrl',
             TokenValue: 'testToken',
-        } as SSM.StartSessionResponse
+        } as StartSessionResponse
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['MY_VAR']))
         const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
@@ -83,12 +84,12 @@ describe('testSshConnection', function () {
             SessionId: 'testSession1',
             StreamUrl: 'testUrl1',
             TokenValue: 'testToken1',
-        } as SSM.StartSessionResponse
+        } as StartSessionResponse
         const newSession = {
             SessionId: 'testSession2',
             StreamUrl: 'testUrl2',
             TokenValue: 'testToken2',
-        } as SSM.StartSessionResponse
+        } as StartSessionResponse
         const envProvider = async () => ({
             SESSION_ID: oldSession.SessionId,
             STREAM_URL: oldSession.StreamUrl,
@@ -105,7 +106,7 @@ describe('testSshConnection', function () {
         const executableFileContent = isWin() ? `echo "%1 %2"` : `echo "$1 $2"`
         const process = createBoundProcess(async () => ({}))
         await createExecutableFile(sshPath, executableFileContent)
-        const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
+        const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as StartSessionResponse)
         assertOutputContains(r.stdout, '-T')
         assertOutputContains(r.stdout, 'test-user@localhost')
     })

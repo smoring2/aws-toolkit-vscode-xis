@@ -5,7 +5,7 @@
 
 import sinon = require('sinon')
 import { RedshiftDatabaseNode } from '../../../../awsService/redshift/explorer/redshiftDatabaseNode'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftDataClient } from '@aws-sdk/client-redshift-data'
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import assert = require('assert')
@@ -15,7 +15,7 @@ import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftDatabaseNode', function () {
     const sandbox = sinon.createSandbox()
-    const mockRedshiftData = <RedshiftData>{}
+    const mockRedshiftData = <RedshiftDataClient>{}
     const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
     const connectionParams = new ConnectionParams(
         ConnectionType.TempCreds,
@@ -28,7 +28,7 @@ describe('RedshiftDatabaseNode', function () {
     describe('getChildren', function () {
         beforeEach(function () {
             listSchemasStub = sandbox.stub()
-            mockRedshiftData.listSchemas = listSchemasStub
+            mockRedshiftData.send = listSchemasStub
         })
 
         afterEach(function () {
@@ -37,21 +37,21 @@ describe('RedshiftDatabaseNode', function () {
 
         it('loads schemas successfully', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.resolve({ Schemas: ['schema1'] }) })
+            listSchemasStub.callsFake(() => Promise.resolve({ Schemas: ['schema1'] }))
             const childNodes = await node.getChildren()
             verifyChildNodes(childNodes, false)
         })
 
         it('loads schemas and shows load more node when there are more schemas', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.resolve({ Schemas: ['schema1'], NextToken: 'next' }) })
+            listSchemasStub.callsFake(() => Promise.resolve({ Schemas: ['schema1'], NextToken: 'next' }))
             const childNodes = await node.getChildren()
             verifyChildNodes(childNodes, true)
         })
 
         it('shows error node when listSchema fails', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.reject('Failed') })
+            listSchemasStub.callsFake(() => Promise.reject('Failed'))
             const childNodes = await node.getChildren()
             assert.strictEqual(childNodes.length, 1)
             assert.strictEqual(childNodes[0].contextValue, 'awsErrorNode')

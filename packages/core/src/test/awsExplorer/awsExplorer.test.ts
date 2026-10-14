@@ -31,7 +31,7 @@ describe('AwsExplorer', function () {
         // TODO: add test util to set-up `Auth` in a certain way
         this.skip()
 
-        const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
+        const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any)
         const regionProvider = createTestRegionProvider({ awsContext })
         await regionProvider.updateExplorerRegions([DEFAULT_TEST_REGION_CODE])
 

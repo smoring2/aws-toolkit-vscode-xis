@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { TelemetryClient, TelemetryFeedback } from '../../../shared/telemetry/telemetryClient'
 import { fakeMetric } from './telemetryService.test'
@@ -29,7 +28,12 @@ class MockTelemetryClient implements TelemetryClient {
 describe('DefaultTelemetryPublisher', function () {
     it('posts feedback', async function () {
         const client = new MockTelemetryClient()
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), client)
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            async () => ({ accessKeyId: '', secretAccessKey: '' }),
+            client
+        )
 
         const feedback = { comment: '', sentiment: '' }
         await publisher.postFeedback(feedback)
@@ -38,7 +42,12 @@ describe('DefaultTelemetryPublisher', function () {
     })
 
     it('enqueues events', function () {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            async () => ({ accessKeyId: '', secretAccessKey: '' }),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(fakeMetric({ metricName: 'name' }))
         assert.strictEqual(publisher.queue.length, 1)
         publisher.enqueue(fakeMetric({ metricName: 'name2' }))
@@ -46,7 +55,12 @@ describe('DefaultTelemetryPublisher', function () {
     })
 
     it('can flush single event', async function () {
-        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
+        const publisher = new DefaultTelemetryPublisher(
+            '',
+            '',
+            async () => ({ accessKeyId: '', secretAccessKey: '' }),
+            new MockTelemetryClient()
+        )
         publisher.enqueue(fakeMetric({ metricName: 'name' }))
 
         assert.strictEqual(publisher.queue.length, 1)
@@ -60,7 +74,7 @@ describe('DefaultTelemetryPublisher', function () {
         const publisher = new DefaultTelemetryPublisher(
             '',
             '',
-            new AWS.Credentials('', ''),
+            async () => ({ accessKeyId: '', secretAccessKey: '' }),
             new MockTelemetryClient(batch)
         )
         publisher.enqueue(...batch)

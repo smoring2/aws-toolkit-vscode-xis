@@ -17,9 +17,7 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
-import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
-import { FakeAwsContext } from '../utilities/fakeAwsContext'
-import { HttpResponse, Service } from 'aws-sdk'
+import { createAwsJsonClient } from '../../shared/awsJsonClient'
 import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
@@ -166,10 +164,11 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
 
 // bryceitoc9: I'm not sure what this function does? spy functionality from Mockito wasn't used, and removing doesn't break anything
 export async function createSpyClient() {
-    const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-    const clientSpy = (await builder.createAwsService(Service, {
-        apiConfig: userApiConfig,
-    } as ServiceOptions)) as CodeWhispererUserClient
+    const clientSpy = createAwsJsonClient<CodeWhispererUserClient>(userApiConfig, {
+        region: 'us-east-1',
+        endpoint: 'https://codewhisperer.us-east-1.amazonaws.com/',
+        bearerToken: 'xxx',
+    })
     sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
     return clientSpy
 }
@@ -219,18 +218,7 @@ export function createMockDirentFile(fileName: string): Dirent {
 }
 
 export const mockGetCodeScanResponse = {
-    $response: {
-        data: {
-            status: 'Completed',
-        },
-        requestId: 'requestId',
-        hasNextPage: () => false,
-        error: undefined,
-        nextPage: () => undefined,
-        redirectCount: 0,
-        retryCount: 0,
-        httpResponse: new HttpResponse(),
-    },
+    $metadata: { requestId: 'requestId' },
     status: 'Completed',
 }
 
@@ -238,36 +226,12 @@ export function createClient() {
     const mockClient = stub(codewhispererClient.DefaultCodeWhispererClient)
 
     const mockCreateCodeScanResponse = {
-        $response: {
-            data: {
-                jobId: 'jobId',
-                status: 'Pending',
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
+        $metadata: { requestId: 'requestId' },
         jobId: 'jobId',
         status: 'Pending',
     }
     const mockCreateUploadUrlResponse = {
-        $response: {
-            data: {
-                uploadId: 'uploadId',
-                uploadUrl: 'uploadUrl',
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
+        $metadata: { requestId: 'requestId' },
         uploadId: 'uploadId',
         uploadUrl: 'https://test.com',
     }
@@ -299,18 +263,7 @@ export function createClient() {
     ])
 
     const mockListCodeScanFindingsResponse = {
-        $response: {
-            data: {
-                codeScanFindings: mockCodeScanFindings,
-            },
-            requestId: 'requestId',
-            hasNextPage: () => false,
-            error: undefined,
-            nextPage: () => undefined,
-            redirectCount: 0,
-            retryCount: 0,
-            httpResponse: new HttpResponse(),
-        },
+        $metadata: { requestId: 'requestId' },
         codeScanFindings: mockCodeScanFindings,
     }
 

@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    LogGroup,
-} from '@aws-sdk/client-cloudwatch-logs'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 import * as os from 'os'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'

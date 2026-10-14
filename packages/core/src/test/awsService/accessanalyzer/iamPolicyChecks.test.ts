@@ -12,7 +12,7 @@ import {
     PolicyChecksError,
 } from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import { globals } from '../../../shared'
-import { AccessAnalyzer, Config } from 'aws-sdk'
+import { AccessAnalyzerClient } from '@aws-sdk/client-accessanalyzer'
 import * as s3Client from '../../../shared/clients/s3Client'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import * as iamPolicyChecks from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
@@ -97,9 +97,8 @@ describe('validatePolicy', function () {
     let executeCommandStub: sinon.SinonStub
     let pushValidatePolicyDiagnosticStub: sinon.SinonStub
     let validateDiagnosticSetStub: sinon.SinonStub
-    const client = new AccessAnalyzer()
-    client.config = new Config()
-    const validatePolicyMock = sinon.mock(AccessAnalyzer)
+    const client = new AccessAnalyzerClient({ region: 'us-east-1' })
+    const validatePolicyMock = sinon.mock(AccessAnalyzerClient)
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
@@ -313,7 +312,7 @@ describe('customChecks', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        const client = AccessAnalyzer.prototype
+        const client = AccessAnalyzerClient.prototype
         const initialData = {
             cfnParameterPath: '',
             checkAccessNotGrantedActionsTextArea: '',

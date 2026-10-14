@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { StackResource, StackSummary } from '@aws-sdk/client-cloudformation'
 import assert from 'assert'
-import { CloudFormation } from 'aws-sdk'
 import * as os from 'os'
 import {
     CloudFormationNode,
@@ -53,7 +53,7 @@ function createCloudFormationClient(...stackNames: string[]) {
 }
 
 describe('CloudFormationStackNode', function () {
-    function createStackSummary() {
+    function createStackSummary(): StackSummary {
         return {
             CreationTime: new globals.clock.Date(),
             StackId: '1',
@@ -72,11 +72,11 @@ describe('CloudFormationStackNode', function () {
         return new CloudFormationStackNode(parentNode, regionCode, summary, lambdaClient, cloudFormationClient)
     }
 
-    function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
+    function generateStackResources(...functionNames: string[]): StackResource[] {
         return functionNames.map((name) => ({
             PhysicalResourceId: name,
             LogicalResourceId: name,
-            ResourceStatus: 'CREATED',
+            ResourceStatus: 'CREATE_COMPLETE',
             ResourceType: 'Lambda::Function',
             Timestamp: new globals.clock.Date(),
         }))

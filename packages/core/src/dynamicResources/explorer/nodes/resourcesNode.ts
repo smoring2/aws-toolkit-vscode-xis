@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    TypeSummary,
-} from '@aws-sdk/client-cloudformation'
+import { TypeSummary } from '@aws-sdk/client-cloudformation'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'

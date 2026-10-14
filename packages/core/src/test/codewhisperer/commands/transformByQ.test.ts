@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
 import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
-import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import path from 'path'
@@ -217,18 +216,7 @@ describe('transformByQ', function () {
 
     it('WHEN polling completed job THEN returns status as completed', async function () {
         const mockJobResponse = {
-            $response: {
-                data: {
-                    transformationJob: { status: 'COMPLETED' },
-                },
-                requestId: 'requestId',
-                hasNextPage: () => false,
-                error: undefined,
-                nextPage: () => undefined,
-                redirectCount: 0,
-                retryCount: 0,
-                httpResponse: new HttpResponse(),
-            },
+            $metadata: { requestId: 'requestId' },
             transformationJob: { status: 'COMPLETED' },
         }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)

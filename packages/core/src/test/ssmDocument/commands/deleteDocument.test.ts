@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { DocumentIdentifier } from '@aws-sdk/client-ssm'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documentItemNodeWriteable'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { SSM } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 import { stub } from '../../utilities/stubber'
 
@@ -21,9 +21,9 @@ describe('deleteDocument', async function () {
     let spyExecuteCommand: sinon.SinonSpy
     const fakeName: string = 'testDocument'
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
+    const fakeDoc: DocumentIdentifier = {
         Name: fakeName,
-        DocumentFormat: 'json',
+        DocumentFormat: 'JSON',
         DocumentType: 'Automation',
         Owner: 'Amazon',
     }

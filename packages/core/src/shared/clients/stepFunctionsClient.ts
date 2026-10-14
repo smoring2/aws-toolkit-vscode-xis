@@ -69,17 +69,13 @@ export class DefaultStepFunctionsClient {
         return response
     }
 
-    public async createStateMachine(
-        params: CreateStateMachineInput
-    ): Promise<CreateStateMachineOutput> {
+    public async createStateMachine(params: CreateStateMachineInput): Promise<CreateStateMachineOutput> {
         const client = await this.createSdkClient()
 
         return client.send(new CreateStateMachineCommand(params))
     }
 
-    public async updateStateMachine(
-        params: UpdateStateMachineInput
-    ): Promise<UpdateStateMachineOutput> {
+    public async updateStateMachine(params: UpdateStateMachineInput): Promise<UpdateStateMachineOutput> {
         const client = await this.createSdkClient()
 
         return client.send(new UpdateStateMachineCommand(params))

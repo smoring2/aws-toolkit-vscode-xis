@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    CreateServiceRequest,
-    InstanceConfiguration,
-    SourceConfiguration,
-} from '@aws-sdk/client-apprunner'
+import { CreateServiceRequest, InstanceConfiguration, SourceConfiguration } from '@aws-sdk/client-apprunner'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import * as input from '../../../shared/ui/inputPrompter'

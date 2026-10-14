@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DescribeLogStreamsRequest,
-    DescribeLogStreamsResponse,
-} from '@aws-sdk/client-cloudwatch-logs'
+import { DescribeLogStreamsRequest, DescribeLogStreamsResponse } from '@aws-sdk/client-cloudwatch-logs'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -183,9 +180,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     }
 }
 
-export function convertDescribeLogToQuickPickItems(
-    response: DescribeLogStreamsResponse
-): vscode.QuickPickItem[] {
+export function convertDescribeLogToQuickPickItems(response: DescribeLogStreamsResponse): vscode.QuickPickItem[] {
     return (response.logStreams ?? []).map<vscode.QuickPickItem>((stream) => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp

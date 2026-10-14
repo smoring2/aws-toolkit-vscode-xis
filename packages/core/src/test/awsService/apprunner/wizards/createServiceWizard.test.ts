@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CreateServiceRequest } from '@aws-sdk/client-apprunner'
 import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
-import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../../awsService/apprunner/wizards/apprunnerCreateServiceWizard'
 import { stub } from '../../../utilities/stubber'
 import { DefaultIamClient } from '../../../../shared/clients/iamClient'
@@ -12,7 +12,7 @@ import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
 
 describe('CreateServiceWizard', function () {
-    let tester: WizardTester<AppRunner.CreateServiceRequest>
+    let tester: WizardTester<CreateServiceRequest>
 
     beforeEach(async function () {
         const regionCode = 'us-east-1'

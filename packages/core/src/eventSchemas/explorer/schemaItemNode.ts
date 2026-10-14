@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    SchemaSummary,
-    SchemaVersionSummary,
-} from '@aws-sdk/client-schemas'
+import { SchemaSummary, SchemaVersionSummary } from '@aws-sdk/client-schemas'
 import * as os from 'os'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 

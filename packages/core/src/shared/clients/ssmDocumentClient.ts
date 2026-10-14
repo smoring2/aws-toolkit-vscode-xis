@@ -51,9 +51,7 @@ export class DefaultSsmDocumentClient {
         return await client.send(new DeleteDocumentCommand(request))
     }
 
-    public async *listDocuments(
-        request: ListDocumentsRequest = {}
-    ): AsyncIterableIterator<DocumentIdentifier> {
+    public async *listDocuments(request: ListDocumentsRequest = {}): AsyncIterableIterator<DocumentIdentifier> {
         const client = await this.createSdkClient()
 
         do {

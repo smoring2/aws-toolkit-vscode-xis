@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
-
+import { DocumentIdentifier, GetDocumentResult } from '@aws-sdk/client-ssm'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
@@ -23,8 +22,8 @@ describe('openDocumentItem', async function () {
         sinon.restore()
     })
 
-    const rawContent: SSM.Types.GetDocumentResult = {
-        DocumentFormat: 'json',
+    const rawContent: GetDocumentResult = {
+        DocumentFormat: 'JSON',
         DocumentType: 'Command',
         Name: 'testDocument',
         Content: `{
@@ -35,9 +34,9 @@ describe('openDocumentItem', async function () {
         }`,
     }
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
+    const fakeDoc: DocumentIdentifier = {
         Name: 'testDocument',
-        DocumentFormat: 'json',
+        DocumentFormat: 'JSON',
         DocumentType: 'Command',
         Owner: 'Amazon',
     }

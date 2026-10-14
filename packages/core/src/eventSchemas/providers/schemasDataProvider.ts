@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    SchemaSummary,
-} from '@aws-sdk/client-schemas'
+import { SchemaSummary } from '@aws-sdk/client-schemas'
 import * as AWS from '@aws-sdk/types'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { getLogger, Logger } from '../../shared/logger'

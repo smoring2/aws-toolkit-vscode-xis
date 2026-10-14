@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    FilterLogEventsRequest,
-    FilteredLogEvent,
-    OutputLogEvent,
-} from '@aws-sdk/client-cloudwatch-logs'
+import { FilterLogEventsRequest, FilteredLogEvent, OutputLogEvent } from '@aws-sdk/client-cloudwatch-logs'
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'

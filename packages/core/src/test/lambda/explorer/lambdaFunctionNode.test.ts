@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import assert from 'assert'
-import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
@@ -12,7 +12,7 @@ import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 describe('LambdaFunctionNode', function () {
     const parentNode = new TestAWSTreeNode('test node')
     let testNode: LambdaFunctionNode
-    let fakeFunctionConfig: Lambda.FunctionConfiguration
+    let fakeFunctionConfig: FunctionConfiguration
 
     before(function () {
         fakeFunctionConfig = {

@@ -26,9 +26,7 @@ export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsCli
 export class DefaultCloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *describeLogGroups(
-        request: DescribeLogGroupsRequest = {}
-    ): AsyncIterableIterator<LogGroup> {
+    public async *describeLogGroups(request: DescribeLogGroupsRequest = {}): AsyncIterableIterator<LogGroup> {
         const sdkClient = await this.createSdkClient()
         do {
             const response = await this.invokeDescribeLogGroups(request, sdkClient)
@@ -39,25 +37,19 @@ export class DefaultCloudWatchLogsClient {
         } while (request.nextToken)
     }
 
-    public async describeLogStreams(
-        request: DescribeLogStreamsRequest
-    ): Promise<DescribeLogStreamsResponse> {
+    public async describeLogStreams(request: DescribeLogStreamsRequest): Promise<DescribeLogStreamsResponse> {
         const sdkClient = await this.createSdkClient()
 
         return sdkClient.send(new DescribeLogStreamsCommand(request))
     }
 
-    public async getLogEvents(
-        request: GetLogEventsRequest
-    ): Promise<GetLogEventsResponse> {
+    public async getLogEvents(request: GetLogEventsRequest): Promise<GetLogEventsResponse> {
         const sdkClient = await this.createSdkClient()
 
         return sdkClient.send(new GetLogEventsCommand(request))
     }
 
-    public async filterLogEvents(
-        request: FilterLogEventsRequest
-    ): Promise<FilterLogEventsResponse> {
+    public async filterLogEvents(request: FilterLogEventsRequest): Promise<FilterLogEventsResponse> {
         const sdkClient = await this.createSdkClient()
 
         return sdkClient.send(new FilterLogEventsCommand(request))

@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DocumentIdentifier,
-    DocumentVersionInfo,
-    GetDocumentResult,
-} from '@aws-sdk/client-ssm'
+import { DocumentIdentifier, DocumentVersionInfo, GetDocumentResult } from '@aws-sdk/client-ssm'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -39,10 +35,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         return this.documentItem.Owner || ''
     }
 
-    public async getDocumentContent(
-        documentVersion?: string,
-        documentFormat?: string
-    ): Promise<GetDocumentResult> {
+    public async getDocumentContent(documentVersion?: string, documentFormat?: string): Promise<GetDocumentResult> {
         if (!this.documentName || !this.documentName.length) {
             return Promise.resolve({})
         }

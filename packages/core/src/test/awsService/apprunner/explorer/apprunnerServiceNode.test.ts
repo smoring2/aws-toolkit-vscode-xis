@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Service } from '@aws-sdk/client-apprunner'
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
 import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
@@ -20,7 +20,7 @@ describe('AppRunnerServiceNode', function () {
     let mockParentNode: AppRunnerNode
     let node: AppRunnerServiceNode
 
-    const exampleInfo: AppRunner.Service = {
+    const exampleInfo: Service = {
         ServiceName: 'test1',
         Status: 'RUNNING',
         ServiceArn: 'test-arn1',

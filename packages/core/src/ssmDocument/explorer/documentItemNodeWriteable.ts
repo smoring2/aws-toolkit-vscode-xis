@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    DeleteDocumentResult,
-    DocumentIdentifier,
-    UpdateDocumentDefaultVersionResult,
-} from '@aws-sdk/client-ssm'
+import { DeleteDocumentResult, DocumentIdentifier, UpdateDocumentDefaultVersionResult } from '@aws-sdk/client-ssm'
 import { RegistryItemNode } from './registryItemNode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from './documentItemNode'
@@ -32,9 +28,7 @@ export class DocumentItemNodeWriteable extends DocumentItemNode {
         return await this.client.deleteDocument(this.documentName)
     }
 
-    public async updateDocumentVersion(
-        documentVersion?: string
-    ): Promise<UpdateDocumentDefaultVersionResult> {
+    public async updateDocumentVersion(documentVersion?: string): Promise<UpdateDocumentDefaultVersionResult> {
         if (!documentVersion || !documentVersion.length) {
             return Promise.resolve({})
         }

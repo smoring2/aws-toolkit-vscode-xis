@@ -43,9 +43,9 @@ import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
 import { DefaultS3Client } from '../../../shared/clients/s3Client'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
-import S3 from 'aws-sdk/clients/s3'
+import { Bucket as S3Bucket } from '@aws-sdk/client-s3'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
+import { StackSummary } from '@aws-sdk/client-cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -2175,7 +2175,7 @@ describe('SAM sync helper functions', () => {
 })
 
 const s3BucketListSummary: Array<
-    RequiredProps<S3.Bucket, 'Name'> & {
+    RequiredProps<S3Bucket, 'Name'> & {
         readonly region: string
     }
 > = [
@@ -2184,22 +2184,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as StackSummary,
     ],
 ]

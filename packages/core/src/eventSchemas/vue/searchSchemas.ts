@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    SchemaSummary,
-    SearchSchemaSummary,
-} from '@aws-sdk/client-schemas'
+import { SchemaSummary, SearchSchemaSummary } from '@aws-sdk/client-schemas'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'

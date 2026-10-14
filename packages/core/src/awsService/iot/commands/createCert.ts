@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    CreateKeysAndCertificateResponse,
-} from '@aws-sdk/client-iot'
+import { CreateKeysAndCertificateResponse } from '@aws-sdk/client-iot'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger'

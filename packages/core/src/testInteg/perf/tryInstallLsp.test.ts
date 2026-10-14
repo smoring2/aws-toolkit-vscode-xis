@@ -4,7 +4,6 @@
  */
 import assert from 'assert'
 import sinon from 'sinon'
-import { Content } from 'aws-sdk/clients/codecommit'
 import AdmZip from 'adm-zip'
 import path from 'path'
 import { LspController } from '../../amazonq'
@@ -56,7 +55,7 @@ function createStubs(numberOfFiles: number, fileSize: number): sinon.SinonSpiedI
  * @param _content unused parameter, for compatability with real function.
  */
 const getFakeDownload = function (numberOfFiles: number, fileSize: number) {
-    return async function (filepath: string, _content: Content) {
+    return async function (filepath: string, _content: unknown) {
         const dummyFilesPath = (
             await createTestWorkspace(numberOfFiles, {
                 fileNamePrefix: 'fakeFile',

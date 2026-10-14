@@ -143,12 +143,7 @@ export async function generateDeployedNode(
                 const apiParentNode = new ApiGatewayNode(partitionId, regionCode)
                 const apiNodes = await apiParentNode.getChildren()
                 const apiNode = apiNodes.find((node) => node.id === deployedResource.PhysicalResourceId)
-                newDeployedResource = new RestApiNode(
-                    apiParentNode,
-                    partitionId,
-                    regionCode,
-                    apiNode as RestApi
-                )
+                newDeployedResource = new RestApiNode(apiParentNode, partitionId, regionCode, apiNode as RestApi)
                 break
             }
             default:

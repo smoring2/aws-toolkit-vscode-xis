@@ -112,11 +112,12 @@ export class DefaultIotClient {
         getLogger().debug('ListThings called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: ListThingsResponse = await iot
-            .send(new ListThingsCommand({
+        const output: ListThingsResponse = await iot.send(
+            new ListThingsCommand({
                 maxResults: request?.maxResults ?? defaultMaxThings,
                 nextToken: request?.nextToken,
-            }))
+            })
+        )
 
         getLogger().debug('ListThings returned response: %O', output)
         return output
@@ -160,12 +161,13 @@ export class DefaultIotClient {
         getLogger().debug('ListCertificates called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: ListCertificatesResponse = await iot
-            .send(new ListCertificatesCommand({
+        const output: ListCertificatesResponse = await iot.send(
+            new ListCertificatesCommand({
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
-            }))
+            })
+        )
 
         getLogger().debug('ListCertificates returned response: %O', output)
         return output
@@ -179,17 +181,16 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listThingPrincipals(
-        request: ListThingPrincipalsRequest
-    ): Promise<ListThingPrincipalsResponse> {
+    public async listThingPrincipals(request: ListThingPrincipalsRequest): Promise<ListThingPrincipalsResponse> {
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: ListThingPrincipalsResponse = await iot
-            .send(new ListThingPrincipalsCommand({
+        const output: ListThingPrincipalsResponse = await iot.send(
+            new ListThingPrincipalsCommand({
                 thingName: request.thingName,
                 maxResults: request.maxResults ?? defaultMaxThings,
                 nextToken: request.nextToken,
-            }))
+            })
+        )
         return output
     }
 
@@ -198,9 +199,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    private async describeCertificate(
-        request: DescribeCertificateRequest
-    ): Promise<DescribeCertificateResponse> {
+    private async describeCertificate(request: DescribeCertificateRequest): Promise<DescribeCertificateResponse> {
         const iot = await this.iotProvider(this.regionCode)
 
         const output: DescribeCertificateResponse = await iot.send(new DescribeCertificateCommand(request))
@@ -218,9 +217,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listThingCertificates(
-        request: ListThingPrincipalsRequest
-    ): Promise<ListThingCertificatesResponse> {
+    public async listThingCertificates(request: ListThingPrincipalsRequest): Promise<ListThingCertificatesResponse> {
         getLogger().debug('ListThingCertificates called with request: %O', request)
 
         const output = await this.listThingPrincipals(request)
@@ -258,12 +255,13 @@ export class DefaultIotClient {
         getLogger().debug('ListThingsForCert called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output = await iot
-            .send(new ListPrincipalThingsCommand({
+        const output = await iot.send(
+            new ListPrincipalThingsCommand({
                 maxResults: request.maxResults ?? defaultMaxThings,
                 nextToken: request.nextToken,
                 principal: request.principal,
-            }))
+            })
+        )
         const iotThings: string[] = output.things ?? []
 
         getLogger().debug('ListThingsForCert returned response: %O', iotThings)
@@ -296,7 +294,9 @@ export class DefaultIotClient {
         getLogger().debug('UpdateCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        await iot.send(new UpdateCertificateCommand({ certificateId: request.certificateId, newStatus: request.newStatus }))
+        await iot.send(
+            new UpdateCertificateCommand({ certificateId: request.certificateId, newStatus: request.newStatus })
+        )
 
         getLogger().debug('UpdateCertificate successful')
     }
@@ -356,12 +356,13 @@ export class DefaultIotClient {
         getLogger().debug('ListPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: ListPoliciesResponse = await iot
-            .send(new ListPoliciesCommand({
+        const output: ListPoliciesResponse = await iot.send(
+            new ListPoliciesCommand({
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
-            }))
+            })
+        )
 
         getLogger().debug('ListPolicies returned response: %O', output)
         return output
@@ -376,13 +377,14 @@ export class DefaultIotClient {
         getLogger().debug('ListPrincipalPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: ListPrincipalPoliciesResponse = await iot
-            .send(new ListPrincipalPoliciesCommand({
+        const output: ListPrincipalPoliciesResponse = await iot.send(
+            new ListPrincipalPoliciesCommand({
                 principal: request.principal,
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 ascendingOrder: request.ascendingOrder,
-            }))
+            })
+        )
 
         getLogger().debug('ListPrincipalPolicies returned response: %O', output)
         return output
@@ -400,12 +402,13 @@ export class DefaultIotClient {
         getLogger().debug('ListPolicyTargets called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output = await iot
-            .send(new ListTargetsForPolicyCommand({
+        const output = await iot.send(
+            new ListTargetsForPolicyCommand({
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
                 policyName: request.policyName,
-            }))
+            })
+        )
         const arns: string[] = output.targets ?? []
 
         getLogger().debug('ListPolicyTargets returned response: %O', arns)

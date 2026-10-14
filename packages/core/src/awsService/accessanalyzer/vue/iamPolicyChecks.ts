@@ -11,11 +11,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../../webviews/main'
 import { ExtContext } from '../../../shared/extensions'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import {
-    AccessAnalyzerClient,
-    ValidatePolicyCommand,
-    ValidatePolicyFinding,
-} from '@aws-sdk/client-accessanalyzer'
+import { AccessAnalyzerClient, ValidatePolicyCommand, ValidatePolicyFinding } from '@aws-sdk/client-accessanalyzer'
 import { fromIni } from '@aws-sdk/credential-providers'
 import { ToolkitError } from '../../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
@@ -239,10 +235,7 @@ export class IamPolicyChecksWebview extends VueWebview {
                                     getResultCssColor('Error'),
                                 ])
                             } else {
-                                this.onValidatePolicyResponse.fire([
-                                    (err as Error).message,
-                                    getResultCssColor('Error'),
-                                ])
+                                this.onValidatePolicyResponse.fire([(err as Error).message, getResultCssColor('Error')])
                             }
                         }
                     })

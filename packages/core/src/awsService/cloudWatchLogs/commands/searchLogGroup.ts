@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    LogGroup,
-} from '@aws-sdk/client-cloudwatch-logs'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { telemetry } from '../../../shared/telemetry/telemetry'

@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    CreateServiceRequest,
-    ListServicesRequest,
-    Service,
-} from '@aws-sdk/client-apprunner'
+import { CreateServiceRequest, ListServicesRequest, Service } from '@aws-sdk/client-apprunner'
 import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'

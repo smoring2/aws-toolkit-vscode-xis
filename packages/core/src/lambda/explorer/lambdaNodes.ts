@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    FunctionConfiguration,
-} from '@aws-sdk/client-lambda'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 

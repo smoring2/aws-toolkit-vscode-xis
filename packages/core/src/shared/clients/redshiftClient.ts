@@ -59,7 +59,9 @@ export class DefaultRedshiftClient {
         private readonly redshiftDataClientProvider: (
             regionCode: string
         ) => Promise<RedshiftDataClient> = createRedshiftDataClient,
-        private readonly redshiftClientProvider: (regionCode: string) => Promise<RedshiftClient> = createRedshiftSdkClient,
+        private readonly redshiftClientProvider: (
+            regionCode: string
+        ) => Promise<RedshiftClient> = createRedshiftSdkClient,
         private readonly redshiftServerlessClientProvider: (
             regionCode: string
         ) => Promise<RedshiftServerlessClient> = createRedshiftServerlessSdkClient

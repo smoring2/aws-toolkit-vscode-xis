@@ -46,11 +46,15 @@ export class DefaultEcsClient {
 
     public async getClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const clusterArnList = await sdkClient.send(new ListClustersCommand({ maxResults: maxResultsPerResponse, nextToken }))
+        const clusterArnList = await sdkClient.send(
+            new ListClustersCommand({ maxResults: maxResultsPerResponse, nextToken })
+        )
         if (clusterArnList.clusterArns?.length === 0) {
             return { resource: [] }
         }
-        const clusterResponse = await sdkClient.send(new DescribeClustersCommand({ clusters: clusterArnList.clusterArns }))
+        const clusterResponse = await sdkClient.send(
+            new DescribeClustersCommand({ clusters: clusterArnList.clusterArns })
+        )
         const response: EcsResourceAndToken = {
             resource: clusterResponse.clusters!,
             nextToken: clusterArnList.nextToken,
@@ -75,8 +79,9 @@ export class DefaultEcsClient {
 
     public async getServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const serviceArnList = await sdkClient
-            .send(new ListServicesCommand({ cluster: cluster, maxResults: maxResultsPerResponse, nextToken }))
+        const serviceArnList = await sdkClient.send(
+            new ListServicesCommand({ cluster: cluster, maxResults: maxResultsPerResponse, nextToken })
+        )
         if (serviceArnList.serviceArns?.length === 0) {
             return { resource: [] }
         }
@@ -136,9 +141,7 @@ export class DefaultEcsClient {
         return await globals.sdkClientBuilderV3.createAwsService(Client, undefined, this.regionCode)
     }
 
-    public async executeCommand(
-        request: Omit<ExecuteCommandRequest, 'interactive'>
-    ): Promise<ExecuteCommandResponse> {
+    public async executeCommand(request: Omit<ExecuteCommandRequest, 'interactive'>): Promise<ExecuteCommandResponse> {
         const sdkClient = await this.createSdkClient()
 
         // Currently the 'interactive' flag is required and needs to be true for ExecuteCommand: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ExecuteCommand.html

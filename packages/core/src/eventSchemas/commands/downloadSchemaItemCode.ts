@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    PutCodeBindingResponse,
-} from '@aws-sdk/client-schemas'
+import { PutCodeBindingResponse } from '@aws-sdk/client-schemas'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import fs = require('fs')
@@ -182,9 +180,7 @@ export class SchemaCodeDownloader {
 export class CodeGenerator {
     public constructor(public client: SchemaClient) {}
 
-    public async generate(
-        codeDownloadRequest: SchemaCodeDownloadRequestDetails
-    ): Promise<PutCodeBindingResponse> {
+    public async generate(codeDownloadRequest: SchemaCodeDownloadRequestDetails): Promise<PutCodeBindingResponse> {
         let response: PutCodeBindingResponse
         try {
             response = await this.client.putCodeBinding(

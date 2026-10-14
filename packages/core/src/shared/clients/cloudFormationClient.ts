@@ -32,20 +32,22 @@ export class DefaultCloudFormationClient {
     public async deleteStack(name: string): Promise<void> {
         const client = await this.createSdkClient()
 
-        await client
-            .send(new DeleteStackCommand({
+        await client.send(
+            new DeleteStackCommand({
                 StackName: name,
-            }))
+            })
+        )
     }
 
     public async describeType(typeName: string): Promise<DescribeTypeOutput> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new DescribeTypeCommand({
+        return await client.send(
+            new DescribeTypeCommand({
                 Type: 'RESOURCE',
                 TypeName: typeName,
-            }))
+            })
+        )
     }
 
     public async *listStacks(
@@ -99,10 +101,11 @@ export class DefaultCloudFormationClient {
     public async describeStackResources(name: string): Promise<DescribeStackResourcesOutput> {
         const client = await this.createSdkClient()
 
-        return await client
-            .send(new DescribeStackResourcesCommand({
+        return await client.send(
+            new DescribeStackResourcesCommand({
                 StackName: name,
-            }))
+            })
+        )
     }
 
     private async createSdkClient(): Promise<Client> {

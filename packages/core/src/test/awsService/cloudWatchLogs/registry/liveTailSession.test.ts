@@ -18,7 +18,7 @@ describe('LiveTailSession', async function () {
     const testLogGroupArn = 'arn:aws:test-log-group'
     const testRegion = 'test-region'
     const testFilter = 'test-filter'
-    const testAwsCredentials = {} as any as AWS.Credentials
+    const testAwsCredentials = {} as any
 
     let sandbox: sinon.SinonSandbox
     let clock: FakeTimers.InstalledClock

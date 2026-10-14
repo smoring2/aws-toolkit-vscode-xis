@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    ResourceDescription,
-} from '@aws-sdk/client-cloudcontrol'
+import { ResourceDescription } from '@aws-sdk/client-cloudcontrol'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger/logger'

@@ -3,24 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftData, RedshiftServerless, AWSError, Request } from 'aws-sdk'
+import { ClustersMessage, RedshiftClient } from '@aws-sdk/client-redshift'
+import { ListDatabasesResponse, ListSchemasResponse, RedshiftDataClient } from '@aws-sdk/client-redshift-data'
+import { ListWorkgroupsResponse, RedshiftServerlessClient } from '@aws-sdk/client-redshift-serverless'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import assert = require('assert')
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../awsService/redshift/models/models'
 import sinon = require('sinon')
 
-function success<T>(output?: T): Request<T, AWSError> {
-    return {
-        promise: () => Promise.resolve(output),
-    } as Request<any, AWSError>
-}
-
 const nextToken = 'testNextToken'
 describe('DefaultRedshiftClient', function () {
     let defaultRedshiftClient: DefaultRedshiftClient
-    let mockRedshift: Redshift
-    let mockRedshiftData: RedshiftData
-    let mockRedshiftServerless: RedshiftServerless
+    let mockRedshift: RedshiftClient
+    let mockRedshiftData: RedshiftDataClient
+    let mockRedshiftServerless: RedshiftServerlessClient
     const clusterIdentifier = 'ClusterId'
     const workgroupName = 'Workgroup'
     const dbName = 'DB'
@@ -45,9 +41,9 @@ describe('DefaultRedshiftClient', function () {
     })
 
     beforeEach(function () {
-        mockRedshift = <Redshift>{}
-        mockRedshiftData = <RedshiftData>{}
-        mockRedshiftServerless = <RedshiftServerless>{}
+        mockRedshift = <RedshiftClient>{}
+        mockRedshiftData = <RedshiftDataClient>{}
+        mockRedshiftServerless = <RedshiftServerlessClient>{}
         defaultRedshiftClient = new DefaultRedshiftClient(
             'us-east-1',
             async (r) => Promise.resolve(mockRedshiftData),
@@ -57,13 +53,13 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('describeProvisionedClusters', function () {
-        const expectedResponse = { Clusters: [] } as Redshift.ClustersMessage
+        const expectedResponse = { Clusters: [] } as ClustersMessage
         let describeClustersStub: sinon.SinonStub
 
         beforeEach(function () {
             describeClustersStub = sandbox.stub()
-            mockRedshift.describeClusters = describeClustersStub
-            describeClustersStub.returns(success(expectedResponse))
+            mockRedshift.send = describeClustersStub
+            describeClustersStub.callsFake(() => Promise.resolve(expectedResponse))
         })
 
         it('without nextToken should not set Marker', async () => {
@@ -80,21 +76,21 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listServerlessWorkgroups', function () {
-        const expectedResponse = { workgroups: [] } as RedshiftServerless.ListWorkgroupsResponse
+        const expectedResponse = { workgroups: [] } as ListWorkgroupsResponse
         let listServerlessWorkgroupsStub: sinon.SinonStub
         beforeEach(function () {
             listServerlessWorkgroupsStub = sandbox.stub()
-            mockRedshiftServerless.listWorkgroups = listServerlessWorkgroupsStub
-            listServerlessWorkgroupsStub.returns(success(expectedResponse))
+            mockRedshiftServerless.send = listServerlessWorkgroupsStub
+            listServerlessWorkgroupsStub.callsFake(() => Promise.resolve(expectedResponse))
         })
 
-        it('without nextToken should not set nextToken in RedshiftServerless request', async () => {
+        it('without nextToken should not set nextToken in RedshiftServerlessClient request', async () => {
             const response = await defaultRedshiftClient.listServerlessWorkgroups()
             listServerlessWorkgroupsStub.alwaysCalledWith({ nextToken: undefined, maxResults: 20 })
             assert.deepStrictEqual(response.workgroups, [])
         })
 
-        it('with nextToken should set nextToken in RedshiftServerless request', async () => {
+        it('with nextToken should set nextToken in RedshiftServerlessClient request', async () => {
             const response = await defaultRedshiftClient.listServerlessWorkgroups(nextToken)
             listServerlessWorkgroupsStub.alwaysCalledWith({ nextToken: nextToken, maxResults: 20 })
             assert.deepStrictEqual(response.workgroups, [])
@@ -102,12 +98,12 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listDatabases', function () {
-        const expectedResponse = { Databases: [] } as RedshiftData.ListDatabasesResponse
+        const expectedResponse = { Databases: [] } as ListDatabasesResponse
         let listDatabasesStub: sinon.SinonStub
         beforeEach(function () {
             listDatabasesStub = sandbox.stub()
-            mockRedshiftData.listDatabases = listDatabasesStub
-            listDatabasesStub.returns(success(expectedResponse))
+            mockRedshiftData.send = listDatabasesStub
+            listDatabasesStub.callsFake(() => Promise.resolve(expectedResponse))
         })
         it('should list databases for provisioned clusters', async () => {
             const response = await defaultRedshiftClient.listDatabases(provisionedDbUserAndPasswordParams)
@@ -127,12 +123,12 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listSchemas', function () {
-        const expectedResponse = { Schemas: [] } as RedshiftData.ListSchemasResponse
+        const expectedResponse = { Schemas: [] } as ListSchemasResponse
         let listSchemasStub: sinon.SinonStub
         beforeEach(function () {
             listSchemasStub = sandbox.stub()
-            mockRedshiftData.listSchemas = listSchemasStub
-            listSchemasStub.returns(success(expectedResponse))
+            mockRedshiftData.send = listSchemasStub
+            listSchemasStub.callsFake(() => Promise.resolve(expectedResponse))
         })
 
         it('should list schemas for databases in provisioned clusters', async () => {

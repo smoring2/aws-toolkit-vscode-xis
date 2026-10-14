@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    FunctionConfiguration,
-} from '@aws-sdk/client-lambda'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import { getIcon } from '../../shared/icons'
 

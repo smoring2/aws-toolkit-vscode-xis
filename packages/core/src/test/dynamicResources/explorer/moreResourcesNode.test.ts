@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { TypeSummary } from '@aws-sdk/client-cloudformation'
 import assert from 'assert'
 import * as vscode from 'vscode'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
@@ -10,7 +11,6 @@ import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resou
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { CloudFormation } from 'aws-sdk'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
@@ -101,8 +101,8 @@ describe('ResourcesNode', function () {
 
     function prepareMock(resourceTypes: string[]) {
         const listStub = sinon.stub().returns(
-            asyncGenerator<CloudFormation.TypeSummary>(
-                resourceTypes.map<CloudFormation.TypeSummary>((resourceType) => {
+            asyncGenerator<TypeSummary>(
+                resourceTypes.map<TypeSummary>((resourceType) => {
                     return {
                         TypeName: resourceType,
                     }

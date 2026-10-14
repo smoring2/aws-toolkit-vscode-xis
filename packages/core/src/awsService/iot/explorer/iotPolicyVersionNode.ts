@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    PolicyVersion,
-} from '@aws-sdk/client-iot'
+import { PolicyVersion } from '@aws-sdk/client-iot'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'

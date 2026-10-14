@@ -192,7 +192,7 @@ describe('TelemetryService', function () {
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
-        service = await initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
+        service = await initService(makeFakeAwsContextWithPlaceholderIds({} as any))
         logger = service.logger
         service.record(fakeMetric({ metricName: 'name' }))
 

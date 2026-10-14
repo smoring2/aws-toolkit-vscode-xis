@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    EvaluationResult,
-} from '@aws-sdk/client-iam'
+import { EvaluationResult } from '@aws-sdk/client-iam'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()

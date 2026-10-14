@@ -40,11 +40,9 @@ export class SsmClient {
 
     public async terminateSessionFromId(sessionId: string): Promise<TerminateSessionResponse> {
         const client = await this.createSdkClient()
-        const termination = await client
-            .send(new TerminateSessionCommand({ SessionId: sessionId }))
-            .catch((err) => {
-                getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
-            })
+        const termination = await client.send(new TerminateSessionCommand({ SessionId: sessionId })).catch((err) => {
+            getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
+        })
 
         return termination!
     }

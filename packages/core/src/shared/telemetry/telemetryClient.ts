@@ -165,15 +165,15 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
             if (!isAutomation()) {
                 await this.client.postMetrics({
-                        AWSProduct: DefaultTelemetryClient.productName,
-                        AWSProductVersion: extensionVersion,
-                        ClientID: this.clientId,
-                        SessionID: getSessionId(),
-                        OS: os.platform(),
-                        OSVersion: os.release(),
-                        ComputeEnv: await getComputeEnvType(),
-                        ParentProduct: vscode.env.appName,
-                        ParentProductVersion: vscode.version,
+                    AWSProduct: DefaultTelemetryClient.productName,
+                    AWSProductVersion: extensionVersion,
+                    ClientID: this.clientId,
+                    SessionID: getSessionId(),
+                    OS: os.platform(),
+                    OSVersion: os.release(),
+                    ComputeEnv: await getComputeEnvType(),
+                    ParentProduct: vscode.env.appName,
+                    ParentProductVersion: vscode.version,
                     MetricData: batch,
                 })
                 this.logger.info(`telemetry: sent batch (size=${batch.length})`)
@@ -192,14 +192,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
     public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
         try {
             await this.client.postFeedback({
-                    AWSProduct: DefaultTelemetryClient.productName,
-                    AWSProductVersion: extensionVersion,
-                    OS: os.platform(),
-                    OSVersion: os.release(),
-                    ComputeEnv: await getComputeEnvType(),
-                    ParentProduct: vscode.env.appName,
-                    ParentProductVersion: vscode.version,
-                    Comment: feedback.comment,
+                AWSProduct: DefaultTelemetryClient.productName,
+                AWSProductVersion: extensionVersion,
+                OS: os.platform(),
+                OSVersion: os.release(),
+                ComputeEnv: await getComputeEnvType(),
+                ParentProduct: vscode.env.appName,
+                ParentProductVersion: vscode.version,
+                Comment: feedback.comment,
                 Sentiment: feedback.sentiment,
             })
             this.logger.debug(`ComputeEnv detected for telemetry: ${await getComputeEnvType()}`)

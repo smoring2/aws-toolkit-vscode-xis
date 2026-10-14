@@ -2,9 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import { Session } from '@aws-sdk/client-ssm'
-import { EC2, SSM } from 'aws-sdk'
 import { Role } from '@aws-sdk/client-iam'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
@@ -42,7 +43,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
-    ssmSession: SSM.StartSessionResponse
+    ssmSession: StartSessionResponse
 }
 
 export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
@@ -84,7 +85,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async addActiveSession(sessionId: SSM.SessionId, instanceId: EC2.InstanceId): Promise<void> {
+    public async addActiveSession(sessionId: string, instanceId: string): Promise<void> {
         await this.sessionManager.addSession(instanceId, sessionId)
     }
 
@@ -233,7 +234,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return remoteEnv
     }
 
-    private async startSSMSession(instanceId: string): Promise<SSM.StartSessionResponse> {
+    private async startSSMSession(instanceId: string): Promise<StartSessionResponse> {
         const ssmSession = await this.ssmClient.startSession(instanceId, 'AWS-StartSSHSession')
         await this.addActiveSession(instanceId, ssmSession.SessionId!)
         return ssmSession

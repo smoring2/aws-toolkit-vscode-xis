@@ -16,6 +16,8 @@ import {
     DeserializeHandler,
     DeserializeMiddleware,
     MetadataBearer,
+    TokenIdentity,
+    TokenIdentityProvider,
     Provider,
     RetryStrategy,
     RetryStrategyV2,
@@ -194,6 +196,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
 export type AwsClientOptions = {
     credentials: AwsCredentialIdentity | AwsCredentialIdentityProvider
+    /** Bearer token (provider) for services which use token-based authentication. */
+    token: TokenIdentity | TokenIdentityProvider
     region: string | Provider<string>
     userAgentAppId: string | undefined
     customUserAgent: UserAgent

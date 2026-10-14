@@ -141,7 +141,7 @@ export class CodeCatalystConfigureWebview extends VueWebview {
 
     public openBranch(): void {
         const repo = this.devenv.summary.repositories?.[0]
-        assertHasProps(repo, 'branchName')
+        assertHasProps(repo, 'branchName', 'repositoryName')
         openCodeCatalystUrl({
             type: 'branch',
             name: repo.branchName,

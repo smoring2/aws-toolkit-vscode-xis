@@ -134,6 +134,9 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         const resp = await client.createAccessToken({ name: 'aws-toolkits-vscode-token' })
+        if (!resp.secret) {
+            throw new ToolkitError('CodeCatalyst: created access token has no secret')
+        }
         await this.storage.storePat(username, resp.secret)
 
         return resp.secret

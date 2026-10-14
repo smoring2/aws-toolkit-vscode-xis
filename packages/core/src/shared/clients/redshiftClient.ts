@@ -4,22 +4,43 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftServerless, RedshiftData } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClusterCredentials, ClustersMessage, GetClusterCredentialsMessage } from 'aws-sdk/clients/redshift'
 import {
+    ClusterCredentials,
+    ClustersMessage,
+    DescribeClustersCommand,
+    DescribeClustersMessage,
+    GetClusterCredentialsCommand,
+    GetClusterCredentialsMessage,
+    RedshiftClient,
+} from '@aws-sdk/client-redshift'
+import {
+    GetCredentialsCommand,
     GetCredentialsRequest,
     GetCredentialsResponse,
+    ListWorkgroupsCommand,
+    ListWorkgroupsRequest,
     ListWorkgroupsResponse,
-} from 'aws-sdk/clients/redshiftserverless'
+    RedshiftServerlessClient,
+} from '@aws-sdk/client-redshift-serverless'
 import {
+    DescribeStatementCommand,
     DescribeStatementRequest,
+    ExecuteStatementCommand,
+    GetStatementResultCommand,
     GetStatementResultRequest,
     GetStatementResultResponse,
+    ListDatabasesCommand,
+    ListDatabasesRequest,
     ListDatabasesResponse,
+    ListSchemasCommand,
+    ListSchemasRequest,
     ListSchemasResponse,
+    ListTablesCommand,
+    ListTablesRequest,
     ListTablesResponse,
-} from 'aws-sdk/clients/redshiftdata'
+    RedshiftDataClient,
+} from '@aws-sdk/client-redshift-data'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../awsService/redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
@@ -37,21 +58,21 @@ export class DefaultRedshiftClient {
         public readonly regionCode: string,
         private readonly redshiftDataClientProvider: (
             regionCode: string
-        ) => Promise<RedshiftData> = createRedshiftDataClient,
-        private readonly redshiftClientProvider: (regionCode: string) => Promise<Redshift> = createRedshiftSdkClient,
+        ) => Promise<RedshiftDataClient> = createRedshiftDataClient,
+        private readonly redshiftClientProvider: (regionCode: string) => Promise<RedshiftClient> = createRedshiftSdkClient,
         private readonly redshiftServerlessClientProvider: (
             regionCode: string
-        ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient
+        ) => Promise<RedshiftServerlessClient> = createRedshiftServerlessSdkClient
     ) {}
 
     // eslint-disable-next-line require-yield
     public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessage> {
         const redshiftClient = await this.redshiftClientProvider(this.regionCode)
-        const request: Redshift.DescribeClustersMessage = {
+        const request: DescribeClustersMessage = {
             Marker: nextToken,
             MaxRecords: 20,
         }
-        const response = await redshiftClient.describeClusters(request).promise()
+        const response = await redshiftClient.send(new DescribeClustersCommand(request))
         if (response.Clusters) {
             response.Clusters = response.Clusters.filter(
                 (cluster) => cluster.ClusterAvailabilityStatus?.toLowerCase() === 'available'
@@ -62,11 +83,11 @@ export class DefaultRedshiftClient {
 
     public async listServerlessWorkgroups(nextToken?: string): Promise<ListWorkgroupsResponse> {
         const redshiftServerlessClient = await this.redshiftServerlessClientProvider(this.regionCode)
-        const request: RedshiftServerless.ListWorkgroupsRequest = {
+        const request: ListWorkgroupsRequest = {
             nextToken: nextToken,
             maxResults: 20,
         }
-        const response = await redshiftServerlessClient.listWorkgroups(request).promise()
+        const response = await redshiftServerlessClient.send(new ListWorkgroupsCommand(request))
         if (response.workgroups) {
             response.workgroups = response.workgroups.filter(
                 (workgroup) => workgroup.status?.toLowerCase() === 'available'
@@ -79,7 +100,7 @@ export class DefaultRedshiftClient {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListDatabasesRequest = {
+        const input: ListDatabasesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
             DbUser:
@@ -94,13 +115,13 @@ export class DefaultRedshiftClient {
                     ? connectionParams.secret
                     : undefined,
         }
-        return redshiftDataClient.listDatabases(input).promise()
+        return redshiftDataClient.send(new ListDatabasesCommand(input))
     }
     public async listSchemas(connectionParams: ConnectionParams, nextToken?: string): Promise<ListSchemasResponse> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListSchemasRequest = {
+        const input: ListSchemasRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
             DbUser:
@@ -114,7 +135,7 @@ export class DefaultRedshiftClient {
                     ? connectionParams.secret
                     : undefined,
         }
-        return redshiftDataClient.listSchemas(input).promise()
+        return redshiftDataClient.send(new ListSchemasCommand(input))
     }
 
     public async listTables(
@@ -125,7 +146,7 @@ export class DefaultRedshiftClient {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListTablesRequest = {
+        const input: ListTablesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             DbUser:
                 connectionParams.username && connectionParams.connectionType !== ConnectionType.DatabaseUser
@@ -140,7 +161,7 @@ export class DefaultRedshiftClient {
                     ? connectionParams.secret
                     : undefined,
         }
-        const ListTablesResponse = redshiftDataClient.listTables(input).promise()
+        const ListTablesResponse = redshiftDataClient.send(new ListTablesCommand(input))
         return ListTablesResponse
     }
 
@@ -153,8 +174,8 @@ export class DefaultRedshiftClient {
         const redshiftData = await this.redshiftDataClientProvider(this.regionCode)
         // if executionId is not passed in, that means that we're executing and retrieving the results of the query for the first time.
         if (!executionId) {
-            const execution = await redshiftData
-                .executeStatement({
+            const execution = await redshiftData.send(
+                new ExecuteStatementCommand({
                     ClusterIdentifier:
                         connectionParams.warehouseType === RedshiftWarehouseType.PROVISIONED
                             ? connectionParams.warehouseIdentifier
@@ -174,15 +195,15 @@ export class DefaultRedshiftClient {
                             ? connectionParams.secret
                             : undefined,
                 })
-                .promise()
+            )
 
             executionId = execution.Id
             type Status = 'RUNNING' | 'FAILED' | 'FINISHED'
             let status: Status = 'RUNNING'
             while (status === 'RUNNING') {
-                const describeStatementResponse = await redshiftData
-                    .describeStatement({ Id: executionId } as DescribeStatementRequest)
-                    .promise()
+                const describeStatementResponse = await redshiftData.send(
+                    new DescribeStatementCommand({ Id: executionId } as DescribeStatementRequest)
+                )
                 if (describeStatementResponse.Status === 'FAILED' || describeStatementResponse.Status === 'FINISHED') {
                     status = describeStatementResponse.Status
                     if (status === 'FAILED') {
@@ -198,9 +219,9 @@ export class DefaultRedshiftClient {
                 }
             }
         }
-        const result = await redshiftData
-            .getStatementResult({ Id: executionId, NextToken: nextToken } as GetStatementResultRequest)
-            .promise()
+        const result = await redshiftData.send(
+            new GetStatementResultCommand({ Id: executionId, NextToken: nextToken } as GetStatementResultRequest)
+        )
 
         return { statementResultResponse: result, executionId: executionId } as ExecuteQueryResponse
     }
@@ -216,14 +237,14 @@ export class DefaultRedshiftClient {
                 DbName: connectionParams.database,
                 ClusterIdentifier: connectionParams.warehouseIdentifier,
             }
-            return redshiftClient.getClusterCredentials(getClusterCredentialsRequest).promise()
+            return redshiftClient.send(new GetClusterCredentialsCommand(getClusterCredentialsRequest))
         } else {
             const redshiftServerless = await this.redshiftServerlessClientProvider(this.regionCode)
             const getCredentialsRequest: GetCredentialsRequest = {
                 dbName: connectionParams.database,
                 workgroupName: connectionParams.warehouseIdentifier,
             }
-            return redshiftServerless.getCredentials(getCredentialsRequest).promise()
+            return redshiftServerless.send(new GetCredentialsCommand(getCredentialsRequest))
         }
     }
     public genUniqueId(connectionParams: ConnectionParams): string {
@@ -258,13 +279,13 @@ export class DefaultRedshiftClient {
     }
 }
 
-async function createRedshiftSdkClient(regionCode: string): Promise<Redshift> {
-    return await globals.sdkClientBuilder.createAwsService(Redshift, { computeChecksums: true }, regionCode)
+async function createRedshiftSdkClient(regionCode: string): Promise<RedshiftClient> {
+    return await globals.sdkClientBuilderV3.createAwsService(RedshiftClient, undefined, regionCode)
 }
 
-async function createRedshiftServerlessSdkClient(regionCode: string): Promise<RedshiftServerless> {
-    return await globals.sdkClientBuilder.createAwsService(RedshiftServerless, { computeChecksums: true }, regionCode)
+async function createRedshiftServerlessSdkClient(regionCode: string): Promise<RedshiftServerlessClient> {
+    return await globals.sdkClientBuilderV3.createAwsService(RedshiftServerlessClient, undefined, regionCode)
 }
-async function createRedshiftDataClient(regionCode: string): Promise<RedshiftData> {
-    return await globals.sdkClientBuilder.createAwsService(RedshiftData, { computeChecksums: true }, regionCode)
+async function createRedshiftDataClient(regionCode: string): Promise<RedshiftDataClient> {
+    return await globals.sdkClientBuilderV3.createAwsService(RedshiftDataClient, undefined, regionCode)
 }

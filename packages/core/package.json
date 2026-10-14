@@ -495,6 +495,7 @@
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
+        "@aws-sdk/client-accessanalyzer": "^3.667.0",
         "@aws-sdk/client-api-gateway": "^3.667.0",
         "@aws-sdk/client-apprunner": "^3.667.0",
         "@aws-sdk/client-cloudcontrol": "^3.667.0",

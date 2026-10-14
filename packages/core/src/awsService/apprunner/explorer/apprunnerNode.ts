@@ -89,7 +89,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                 } else {
                     this.serviceNodes.set(summary.ServiceArn!, new AppRunnerServiceNode(this, this.client, summary))
                 }
-                deletedNodeArns.delete(summary.ServiceArn)
+                deletedNodeArns.delete(summary.ServiceArn!)
             })
         )
 

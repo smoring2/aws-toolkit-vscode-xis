@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 import * as vscode from 'vscode'
 import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
@@ -11,7 +13,6 @@ import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
-import { EC2 } from 'aws-sdk'
 import { getLogger } from '../../../shared'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
@@ -68,7 +69,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return Ec2InstancePendingContext
     }
 
-    public setInstanceStatus(instanceStatus: string) {
+    public setInstanceStatus(instanceStatus: InstanceStateName) {
         this.instance.LastSeenStatus = instanceStatus
     }
 
@@ -79,7 +80,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public getStatus(): EC2.InstanceStateName {
+    public getStatus(): InstanceStateName {
         return this.instance.LastSeenStatus
     }
 

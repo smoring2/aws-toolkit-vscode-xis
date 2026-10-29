@@ -113,7 +113,7 @@ describe('CodeWhisperer security scan', async function () {
 
     it('codescan request with valid input params and no security issues completes scan and returns no recommendations', async function () {
         // set up file and editor
-        const appRoot = path.join(workspaceFolder, 'python3.7-plain-sam-app')
+        const appRoot = path.join(workspaceFolder, 'python3.13-plain-sam-app')
         const appCodePath = path.join(appRoot, 'hello_world', 'app.py')
         const editor = await openTestFile(appCodePath)
 

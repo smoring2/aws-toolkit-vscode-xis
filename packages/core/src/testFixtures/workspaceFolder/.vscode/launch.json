@@ -45,12 +45,12 @@
             }
         },
         {
-            "name": "test-launchconfig-5-python3.7",
+            "name": "test-launchconfig-5-python3.13",
             "type": "aws-sam",
             "request": "direct-invoke",
             "invokeTarget": {
                 "target": "template",
-                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "templatePath": "python3.13-plain-sam-app/template.yaml",
                 "logicalId": "HelloWorldFunction"
             },
             "lambda": {
@@ -59,12 +59,12 @@
             }
         },
         {
-            "name": "test-launchconfig-6-python3.7",
+            "name": "test-launchconfig-6-python3.13",
             "type": "aws-sam",
             "request": "direct-invoke",
             "invokeTarget": {
                 "target": "api",
-                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "templatePath": "python3.13-plain-sam-app/template.yaml",
                 "logicalId": "HelloWorldFunction"
             },
             "api": {

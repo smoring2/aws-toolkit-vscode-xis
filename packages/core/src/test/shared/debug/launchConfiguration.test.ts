@@ -102,7 +102,7 @@ describe('LaunchConfiguration', function () {
     let testLaunchJsonData: any
     const templateUriJsPlainApp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'js-plain-sam-app/template.yaml'))
     const templateUriPython37 = vscode.Uri.file(
-        path.join(workspace.uri.fsPath, 'python3.7-plain-sam-app/template.yaml')
+        path.join(workspace.uri.fsPath, 'python3.13-plain-sam-app/template.yaml')
     )
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp6-zip/template.yaml'))
 
@@ -135,7 +135,7 @@ describe('LaunchConfiguration', function () {
             await getConfigsMappedToTemplates(new LaunchConfiguration(templateUriPython37), 'api')
         )
         assert.deepStrictEqual(actual2.length, 1)
-        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-6-python3.7')
+        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-6-python3.13')
         assert.deepStrictEqual(actual2[0].invokeTarget.target, 'api')
         assert.deepStrictEqual((actual2[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
 
@@ -157,8 +157,8 @@ describe('LaunchConfiguration', function () {
             await getConfigsMappedToTemplates(new LaunchConfiguration(templateUriPython37), undefined)
         )
         assert.deepStrictEqual(actual2.length, 2)
-        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-5-python3.7')
-        assert.deepStrictEqual(actual2[1].name, 'test-launchconfig-6-python3.7')
+        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-5-python3.13')
+        assert.deepStrictEqual(actual2[1].name, 'test-launchconfig-6-python3.13')
         assert.deepStrictEqual(actual2[0].invokeTarget.target, 'template')
         assert.deepStrictEqual(actual2[1].invokeTarget.target, 'api')
 

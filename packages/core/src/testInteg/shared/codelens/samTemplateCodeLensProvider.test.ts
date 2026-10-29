@@ -25,7 +25,7 @@ describe('SamTemplateCodeLensProvider', async function () {
 
     beforeEach(async function () {
         codeLensProvider = new SamTemplateCodeLensProvider()
-        document = (await workspaceUtils.openTextDocument('python3.7-plain-sam-app/template.yaml'))!
+        document = (await workspaceUtils.openTextDocument('python3.13-plain-sam-app/template.yaml'))!
         templateUri = document.uri
         launchConfig = new LaunchConfiguration(document.uri)
     })

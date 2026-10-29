@@ -20,7 +20,7 @@ import * as vscode from 'vscode'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
 
 const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
-    filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+    filePath: 'workspaceFolder/python3.13-plain-sam-app/hello_world/app.py',
     startLine: 1,
     endLine: 1,
     title: 'title',

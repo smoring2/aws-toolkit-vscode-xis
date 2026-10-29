@@ -137,7 +137,7 @@ describe('isImageLambdaConfig', function () {
     })
 
     it('true for Image-backed template', async function () {
-        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
+        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.13-image-sam-app/template.yaml'))
         await registry.addItem(templatePath)
 
         const input = {
@@ -166,7 +166,7 @@ describe('isImageLambdaConfig', function () {
     })
 
     it('false for ZIP-backed template', async function () {
-        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+        const templatePath = vscode.Uri.file(path.join(appDir, 'python3.13-plain-sam-app/template.yaml'))
         await registry.addItem(templatePath)
 
         const input = {

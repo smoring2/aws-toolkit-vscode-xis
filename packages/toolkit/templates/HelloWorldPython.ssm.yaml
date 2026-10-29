@@ -25,7 +25,7 @@ mainSteps:
       action: aws:executeScript
       description: Executes a Python script
       inputs:
-          Runtime: python3.7
+          Runtime: python3.13
           InputPayload:
               Name: '{{ Name }}'
           Handler: handler

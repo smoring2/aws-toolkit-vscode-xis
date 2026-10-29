@@ -44,7 +44,7 @@ describe('startSecurityScan', function () {
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
-        appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
+        appRoot = join(workspaceFolder, 'python3.13-plain-sam-app')
         appCodePath = join(appRoot, 'hello_world', 'app.py')
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)

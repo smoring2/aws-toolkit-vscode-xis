@@ -274,7 +274,7 @@ export function createClient() {
 
     const mockCodeScanFindings = JSON.stringify([
         {
-            filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
+            filePath: 'workspaceFolder/python3.13-plain-sam-app/hello_world/app.py',
             startLine: 1,
             endLine: 1,
             title: 'title',

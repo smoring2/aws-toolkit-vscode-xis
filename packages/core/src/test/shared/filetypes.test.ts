@@ -112,7 +112,7 @@ describe('file_editAwsFile telemetry', function () {
         await testUtil.toFile('Test file from the aws-toolkit-vscode test suite.', awsConfigFile)
 
         ssmJsonUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'test.ssm.json'))
-        cfnUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'python3.7-plain-sam-app/template.yaml'))
+        cfnUri = vscode.Uri.file(workspaceUtils.tryGetAbsolutePath(ws, 'python3.13-plain-sam-app/template.yaml'))
     })
 
     after(async function () {

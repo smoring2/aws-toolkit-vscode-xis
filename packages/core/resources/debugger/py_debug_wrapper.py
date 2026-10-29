@@ -19,7 +19,7 @@ class Pipe:
         # to stderr as it will clutter the debug console (unless we are in debug mode)
         # however, we do want to output actual errors without debug mode to let the user know something 
         # went wrong with starting debugpy
-        if not re.search('(I|D)\+[0-9]+\.[0-9]+:', message) or self.debug:  
+        if not re.search(r'(I|D)\+[0-9]+\.[0-9]+:', message) or self.debug:  
             sys.stdout.write(message)
 
     def flush(self):
